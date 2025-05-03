@@ -1,9 +1,0 @@
-rm -f client/image_client server/image_server_exec
-
-gcc image_client.c -o client/image_client
-
-gcc image_server.c -o server/image_server_exec -lpthread
-
-./server/image_server_exec &
-
-./client/image_client
