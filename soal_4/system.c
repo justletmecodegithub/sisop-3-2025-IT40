@@ -85,8 +85,8 @@ void list_dungeons() {
     printf("\n=== DUNGEON INFO ===\n");
     for (int i = 0; i < sys_data->num_dungeons; i++) {
         Dungeon *d = &sys_data->dungeons[i];
-        printf("%d. %s | Lv %d+ | ATK:%d HP:%d DEF:%d EXP:%d\n",
-               i + 1, d->name, d->min_level, d->atk, d->hp, d->def, d->exp);
+        printf("%d. %s | Lv %d+ | Key:%d\n", i + 1, d->name, d->min_level, d->shm_key);
+        printf("    ATK:%d HP:%d DEF:%d EXP:%d\n", d->atk, d->hp, d->def, d->exp);
     }
     sem_post(&sys_data->dungeon_sem);
 }
@@ -108,7 +108,8 @@ void generate_dungeon() {
     }
 
     Dungeon *d = &sys_data->dungeons[sys_data->num_dungeons];
-    strncpy(d->name, names[rand() % 11], MAX_NAME - 1);
+    int index = rand() % 11;
+    strncpy(d->name, names[index], MAX_NAME - 1);
     d->min_level = rand() % 5 + 1;
     d->atk = rand() % 51 + 100;
     d->hp = rand() % 51 + 50;
@@ -117,6 +118,8 @@ void generate_dungeon() {
     d->shm_key = ftok("/tmp", 'D' + sys_data->num_dungeons);
 
     printf("[+] Generated: %s (Lv %d+)\n", d->name, d->min_level);
+    printf("    Key: %d | Stats: ATK:%d HP:%d DEF:%d EXP:%d\n", 
+           d->shm_key, d->atk, d->hp, d->def, d->exp);
     sys_data->num_dungeons++;
 
     sem_post(&sys_data->dungeon_sem);
@@ -129,14 +132,9 @@ void ban_hunter() {
 
     sem_wait(&sys_data->hunter_sem);
     for (int i = 0; i < sys_data->num_hunters; i++) {
-        Hunter *h = &sys_data->hunters[i];
-        if (strcmp(h->username, name) == 0) {
-            if (h->banned) {
-                printf("[!] %s is already banned\n", name);
-            } else {
-                h->banned = 1;
-                printf("[*] %s has been banned\n", name);
-            }
+        if (strcmp(sys_data->hunters[i].username, name) == 0) {
+            sys_data->hunters[i].banned = 1;
+            printf("[*] %s has been banned\n", name);
             sem_post(&sys_data->hunter_sem);
             return;
         }
@@ -152,14 +150,9 @@ void unban_hunter() {
 
     sem_wait(&sys_data->hunter_sem);
     for (int i = 0; i < sys_data->num_hunters; i++) {
-        Hunter *h = &sys_data->hunters[i];
-        if (strcmp(h->username, name) == 0) {
-            if (!h->banned) {
-                printf("[!] %s is not banned\n", name);
-            } else {
-                h->banned = 0;
-                printf("[*] %s has been unbanned\n", name);
-            }
+        if (strcmp(sys_data->hunters[i].username, name) == 0) {
+            sys_data->hunters[i].banned = 0;
+            printf("[*] %s has been unbanned\n", name);
             sem_post(&sys_data->hunter_sem);
             return;
         }
@@ -175,9 +168,10 @@ void reset_hunter() {
 
     sem_wait(&sys_data->hunter_sem);
     for (int i = 0; i < sys_data->num_hunters; i++) {
-        Hunter *h = &sys_data->hunters[i];
-        if (strcmp(h->username, name) == 0) {
+        if (strcmp(sys_data->hunters[i].username, name) == 0) {
+            Hunter *h = &sys_data->hunters[i];
             h->level = 1; h->exp = 0; h->atk = 10; h->hp = 100; h->def = 5;
+            h->banned = 0;
             printf("[*] %s has been reset\n", name);
             sem_post(&sys_data->hunter_sem);
             return;
@@ -187,27 +181,13 @@ void reset_hunter() {
     sem_post(&sys_data->hunter_sem);
 }
 
-void shutdown_system() {
-    printf("\n[!] Shutting down system...\n");
-    
-    sem_destroy(&sys_data->hunter_sem);
-    sem_destroy(&sys_data->dungeon_sem);
-    
-    shmdt(sys_data);
-    
-    shmctl(shm_id, IPC_RMID, NULL);
-    
-    printf("[!] System has been shut down. Shared memory removed.\n");
-    exit(0);
-}
-
 void system_menu() {
     int choice;
     do {
         printf("\n=== SYSTEM MENU ===\n");
         printf("1. Hunter Info\n2. Dungeon Info\n3. Generate Dungeon\n");
         printf("4. Ban Hunter\n5. Unban Hunter\n6. Reset Hunter\n");
-        printf("7. Exit (Keep System Running)\n8. Shutdown System\n");
+        printf("7. Exit\n");
         printf("Choice: ");
         scanf("%d", &choice);
 
@@ -219,7 +199,6 @@ void system_menu() {
             case 5: unban_hunter(); break;
             case 6: reset_hunter(); break;
             case 7: return;
-            case 8: shutdown_system(); break;
             default: printf("Invalid choice\n");
         }
     } while (1);
@@ -228,10 +207,8 @@ void system_menu() {
 int main() {
     srand(time(NULL));
     signal(SIGINT, SIG_IGN);
-
     init_shared_memory();
     system_menu();
-
     shmdt(sys_data);
     return 0;
 }
