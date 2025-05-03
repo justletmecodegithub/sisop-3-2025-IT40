@@ -20,37 +20,37 @@ void print_menu() {
 void battle_mode(int sock) {
     char buffer[BUFFER_SIZE] = {0};
     
-   
+    // Enter battle mode
     send(sock, "battle", 6, 0);
-    read(sock, buffer, BUFFER_SIZE);
-    printf("\n%s\n", buffer);
+    
+    // Get initial battle message
+    int bytes_read = read(sock, buffer, BUFFER_SIZE-1);
+    if (bytes_read <= 0) return;
+    buffer[bytes_read] = '\0';
+    printf("%s", buffer);
     
     while(1) {
-        printf("\n> ");
-        fgets(buffer, BUFFER_SIZE, stdin);
+        printf("> ");
+        fflush(stdout);
+        
+        if (fgets(buffer, BUFFER_SIZE, stdin) == NULL) break;
         buffer[strcspn(buffer, "\n")] = 0;
         
-        if(strcmp(buffer, "attack") == 0) {
-            send(sock, "attack", 6, 0);
-            memset(buffer, 0, BUFFER_SIZE);
-            read(sock, buffer, BUFFER_SIZE);
-            printf("\n%s\n", buffer);
+        if(strcmp(buffer, "attack") == 0 || strcmp(buffer, "exit") == 0) {
+            send(sock, buffer, strlen(buffer), 0);
             
-           
-            if(strstr(buffer, "You defeated") != NULL) {
+            // Get server response
+            memset(buffer, 0, BUFFER_SIZE);
+            bytes_read = read(sock, buffer, BUFFER_SIZE-1);
+            if (bytes_read <= 0) break;
+            buffer[bytes_read] = '\0';
+            
+            printf("%s", buffer);
+            
+            if(strcmp(buffer, "Exiting battle...\n") == 0) {
                 break;
             }
-            
-          
-            memset(buffer, 0, BUFFER_SIZE);
-            read(sock, buffer, BUFFER_SIZE);
-            printf("\n%s\n", buffer);
-        }
-        else if(strcmp(buffer, "exit") == 0) {
-            send(sock, "exit", 4, 0);
-            break;
-        }
-        else {
+        } else {
             printf("Invalid command. Type 'attack' or 'exit'\n");
         }
     }
@@ -69,8 +69,7 @@ int main() {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
     
-    
-    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
         printf("\nInvalid address/ Address not supported \n");
         return -1;
     }
@@ -85,57 +84,52 @@ int main() {
     int choice;
     while(1) {
         print_menu();
-        scanf("%d", &choice);
+        if (scanf("%d", &choice) != 1) {
+            while (getchar() != '\n');
+            printf("Invalid input. Please enter a number.\n");
+            continue;
+        }
         getchar();
         
         switch(choice) {
             case 1:
                 send(sock, "stats", 5, 0);
+                memset(buffer, 0, BUFFER_SIZE);
                 read(sock, buffer, BUFFER_SIZE);
                 printf("\n=== PLAYER STATS ===\n%s\n", buffer);
                 break;
                 
-            case 2: {
+            case 2:
                 send(sock, "shop", 4, 0);
+                memset(buffer, 0, BUFFER_SIZE);
                 read(sock, buffer, BUFFER_SIZE);
-                printf("\n%s\n", buffer);
+                printf("\n%s", buffer);
                 
                 printf("Enter weapon number to buy (0 to cancel): ");
-                int weapon;
-                scanf("%d", &weapon);
-                getchar();
+                fgets(buffer, BUFFER_SIZE, stdin);
+                buffer[strcspn(buffer, "\n")] = 0;
+                send(sock, buffer, strlen(buffer), 0);
                 
-                if(weapon != 0) {
-                    char buy_cmd[10];
-                    snprintf(buy_cmd, sizeof(buy_cmd), "buy %d", weapon);
-                    send(sock, buy_cmd, strlen(buy_cmd), 0);
-                    memset(buffer, 0, BUFFER_SIZE);
-                    read(sock, buffer, BUFFER_SIZE);
-                    printf("\n%s\n", buffer);
-                }
-                break;
-            }
-                
-            case 3: {
-                send(sock, "inventory", 9, 0);
+                memset(buffer, 0, BUFFER_SIZE);
                 read(sock, buffer, BUFFER_SIZE);
-                printf("\n=== YOUR INVENTORY ===\n%s\n", buffer);
+                printf("\n%s\n", buffer);
+                break;
+                
+            case 3:
+                send(sock, "inventory", 9, 0);
+                memset(buffer, 0, BUFFER_SIZE);
+                read(sock, buffer, BUFFER_SIZE);
+                printf("\n%s", buffer);
                 
                 printf("Enter weapon number to equip (0 to cancel): ");
-                int weapon;
-                scanf("%d", &weapon);
-                getchar();
+                fgets(buffer, BUFFER_SIZE, stdin);
+                buffer[strcspn(buffer, "\n")] = 0;
+                send(sock, buffer, strlen(buffer), 0);
                 
-                if(weapon != 0) {
-                    char equip_cmd[10];
-                    snprintf(equip_cmd, sizeof(equip_cmd), "equip %d", weapon);
-                    send(sock, equip_cmd, strlen(equip_cmd), 0);
-                    memset(buffer, 0, BUFFER_SIZE);
-                    read(sock, buffer, BUFFER_SIZE);
-                    printf("\n%s\n", buffer);
-                }
+                memset(buffer, 0, BUFFER_SIZE);
+                read(sock, buffer, BUFFER_SIZE);
+                printf("\n%s\n", buffer);
                 break;
-            }
                 
             case 4:
                 battle_mode(sock);
@@ -151,5 +145,6 @@ int main() {
         }
     }
     
+    close(sock);
     return 0;
 }
