@@ -58,7 +58,6 @@ void init_shared_memory() {
     }
 
     struct shmid_ds buf;
-    shmctl(shm_id, IPC_STAT, &buf);
     if (buf.shm_nattch == 1) {
         memset(sys_data, 0, sizeof(SystemData));
         sem_init(&sys_data->hunter_sem, 1, 1);
