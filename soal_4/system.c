@@ -218,10 +218,7 @@ void system_menu() {
             case 4: ban_hunter(); break;
             case 5: unban_hunter(); break;
             case 6: reset_hunter(); break;
-            case 7: 
-                printf("\n[!] System will continue running in background\n");
-                printf("[!] You can now run hunter.c\n");
-                return;
+            case 7: return;
             case 8: shutdown_system(); break;
             default: printf("Invalid choice\n");
         }
