@@ -190,14 +190,11 @@ void reset_hunter() {
 void shutdown_system() {
     printf("\n[!] Shutting down system...\n");
     
-    // Cleanup semaphores
     sem_destroy(&sys_data->hunter_sem);
     sem_destroy(&sys_data->dungeon_sem);
     
-    // Detach shared memory
     shmdt(sys_data);
     
-    // Remove shared memory
     shmctl(shm_id, IPC_RMID, NULL);
     
     printf("[!] System has been shut down. Shared memory removed.\n");
@@ -238,7 +235,6 @@ int main() {
     init_shared_memory();
     system_menu();
 
-    // Detach but keep shared memory when exiting normally
     shmdt(sys_data);
     return 0;
 }
