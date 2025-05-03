@@ -1,161 +1,128 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define MAX_WEAPONS 5
+#define MAX_INVENTORY 10
 
 typedef struct {
-    int id;
+    int gold;
+    int base_damage;
+    char equipped_weapon[50];
+    int kills;
+    int inventory[10];
+    int inventory_size;
+} Player;
+
+typedef struct {
     char name[50];
     int price;
     int damage;
     char passive[100];
 } Weapon;
 
-Weapon weapons[] = {
-    {1, "Terra Blade", 50, 10, ""},
-    {2, "Flint & Steel", 150, 25, ""},
-    {3, "Kitchen Knife", 200, 35, ""},
-    {4, "Staff of Light", 120, 20, "10% Insta-Kill Chance"},
-    {5, "Dragon Claws", 300, 50, "30% Crit Chance"}
-};
+Weapon shop_items[MAX_WEAPONS];
 
-int num_weapons = sizeof(weapons) / sizeof(weapons[0]);
+void init_shop() {
+    strcpy(shop_items[0].name, "Terra Blade");
+    shop_items[0].price = 50;
+    shop_items[0].damage = 10;
+    strcpy(shop_items[0].passive, "None");
+    
+    strcpy(shop_items[1].name, "Flint & Steel");
+    shop_items[1].price = 150;
+    shop_items[1].damage = 25;
+    strcpy(shop_items[1].passive, "None");
+    
+    strcpy(shop_items[2].name, "Kitchen Knife");
+    shop_items[2].price = 200;
+    shop_items[2].damage = 35;
+    strcpy(shop_items[2].passive, "None");
+    
+    strcpy(shop_items[3].name, "Staff of Light");
+    shop_items[3].price = 120;
+    shop_items[3].damage = 20;
+    strcpy(shop_items[3].passive, "10% Insta-Kill Chance");
+    
+    strcpy(shop_items[4].name, "Dragon Claws");
+    shop_items[4].price = 300;
+    shop_items[4].damage = 50;
+    strcpy(shop_items[4].passive, "30% Crit Chance");
+}
 
 char* get_shop_menu() {
-    static char menu[1000];
-    strcpy(menu, "=== WEAPON SHOP ===\n");
-    
-    for(int i = 0; i < num_weapons; i++) {
-        char weapon_info[200];
-        if(strlen(weapons[i].passive) > 0) {
-            snprintf(weapon_info, sizeof(weapon_info), 
-                    "[%d] %s - Price: %d gold, Damage: %d (Passive: %s)\n", 
-                    weapons[i].id, weapons[i].name, weapons[i].price, 
-                    weapons[i].damage, weapons[i].passive);
-        } else {
-            snprintf(weapon_info, sizeof(weapon_info), 
-                    "[%d] %s - Price: %d gold, Damage: %d\n", 
-                    weapons[i].id, weapons[i].name, weapons[i].price, weapons[i].damage);
-        }
-        strcat(menu, weapon_info);
-    }
-    
+    static char menu[1024];
+    snprintf(menu, sizeof(menu),
+        "\n=== WEAPON SHOP ===\n"
+        "[1] %s - Price: %d gold, Damage: %d\n"
+        "[2] %s - Price: %d gold, Damage: %d\n"
+        "[3] %s - Price: %d gold, Damage: %d\n"
+        "[4] %s - Price: %d gold, Damage: %d (Passive: %s)\n"
+        "[5] %s - Price: %d gold, Damage: %d (Passive: %s)\n"
+        "Enter weapon number to buy (0 to cancel): ",
+        shop_items[0].name, shop_items[0].price, shop_items[0].damage,
+        shop_items[1].name, shop_items[1].price, shop_items[1].damage,
+        shop_items[2].name, shop_items[2].price, shop_items[2].damage,
+        shop_items[3].name, shop_items[3].price, shop_items[3].damage, shop_items[3].passive,
+        shop_items[4].name, shop_items[4].price, shop_items[4].damage, shop_items[4].passive);
     return menu;
 }
 
-void buy_weapon(int weapon_id, void* player_ptr, char* result) {
-    typedef struct {
-        int gold;
-        char equipped_weapon[50];
-        int base_damage;
-        int kills;
-        int weapon_id;
-        int inventory[10];
-        int inventory_size;
-    } Player;
-    
-    Player* player = (Player*)player_ptr;
-    
-    if(weapon_id < 1 || weapon_id > num_weapons) {
-        strcpy(result, "Invalid weapon ID");
+void buy_weapon(int weapon_id, Player* player, char* result) {
+    if (weapon_id < 1 || weapon_id > MAX_WEAPONS) {
+        snprintf(result, 1024, "Invalid weapon choice!");
         return;
     }
     
-    Weapon* weapon = &weapons[weapon_id - 1];
+    weapon_id--;
     
-    if(player->gold < weapon->price) {
-        snprintf(result, 100, "Not enough gold! You need %d more gold.", weapon->price - player->gold);
+    if (player->gold < shop_items[weapon_id].price) {
+        snprintf(result, 1024, "Not enough gold!");
         return;
     }
     
-    for(int i = 0; i < player->inventory_size; i++) {
-        if(player->inventory[i] == weapon_id) {
-            strcpy(result, "You already own this weapon!");
-            return;
-        }
+    if (player->inventory_size >= MAX_INVENTORY) {
+        snprintf(result, 1024, "Inventory full!");
+        return;
     }
     
-    if(player->inventory_size < 10) {
-        player->inventory[player->inventory_size++] = weapon_id;
-        player->gold -= weapon->price;
-        snprintf(result, 100, "You bought the %s!", weapon->name);
-    } else {
-        strcpy(result, "Your inventory is full!");
-    }
+    player->inventory[player->inventory_size] = weapon_id;
+    player->inventory_size++;
+    player->gold -= shop_items[weapon_id].price;
+    
+    snprintf(result, 1024, "Purchase successful!");
 }
 
-void get_inventory(void* player_ptr, char* inventory) {
-    typedef struct {
-        int gold;
-        char equipped_weapon[50];
-        int base_damage;
-        int kills;
-        int weapon_id;
-        int inventory[10];
-        int inventory_size;
-    } Player;
+void get_inventory(Player* player, char* inventory) {
+    char temp[1024] = "\n=== YOUR INVENTORY ===\n";
     
-    Player* player = (Player*)player_ptr;
-    
-    strcpy(inventory, "[0] Fists");
-    
-    for(int i = 0; i < player->inventory_size; i++) {
+    for (int i = 0; i < player->inventory_size; i++) {
         int weapon_id = player->inventory[i];
-        Weapon* weapon = &weapons[weapon_id - 1];
-        
-        char item[200];
-        if(strlen(weapon->passive) > 0) {
-            snprintf(item, sizeof(item), "\n[%d] %s (Passive: %s)", 
-                    weapon_id, weapon->name, weapon->passive);
+        char item[256];
+        if (strcmp(shop_items[weapon_id].passive, "None") == 0) {
+            snprintf(item, sizeof(item), "[%d] %s\n", i+1, shop_items[weapon_id].name);
         } else {
-            snprintf(item, sizeof(item), "\n[%d] %s", weapon_id, weapon->name);
+            snprintf(item, sizeof(item), "[%d] %s (Passive: %s)\n", i+1, 
+                    shop_items[weapon_id].name, shop_items[weapon_id].passive);
         }
-        
-        strcat(inventory, item);
-        
-        if(player->weapon_id == weapon_id) {
-            strcat(inventory, " (EQUIPPED)");
-        }
+        strcat(temp, item);
     }
+    
+    strcat(temp, "Enter weapon number to equip (0 to cancel): ");
+    strcpy(inventory, temp);
 }
 
-void equip_weapon(int weapon_id, void* player_ptr, char* result) {
-    typedef struct {
-        int gold;
-        char equipped_weapon[50];
-        int base_damage;
-        int kills;
-        int weapon_id;
-        int inventory[10];
-        int inventory_size;
-    } Player;
-    
-    Player* player = (Player*)player_ptr;
-    
-    if(weapon_id == 0) {
-        strcpy(player->equipped_weapon, "Fists");
-        player->base_damage = 5;
-        player->weapon_id = 0;
-        strcpy(result, "Equipped Fists");
+void equip_weapon(int weapon_id, Player* player, char* result) {
+    if (weapon_id < 1 || weapon_id > player->inventory_size) {
+        snprintf(result, 1024, "Invalid weapon choice!");
         return;
     }
     
-    int found = 0;
-    for(int i = 0; i < player->inventory_size; i++) {
-        if(player->inventory[i] == weapon_id) {
-            found = 1;
-            break;
-        }
-    }
+    weapon_id--;
+    int actual_weapon_id = player->inventory[weapon_id];
     
-    if(!found) {
-        strcpy(result, "You don't own this weapon!");
-        return;
-    }
+    strcpy(player->equipped_weapon, shop_items[actual_weapon_id].name);
+    player->base_damage = shop_items[actual_weapon_id].damage;
     
-    Weapon* weapon = &weapons[weapon_id - 1];
-    strcpy(player->equipped_weapon, weapon->name);
-    player->base_damage = weapon->damage;
-    player->weapon_id = weapon_id;
-    
-    snprintf(result, 100, "Equipped %s", weapon->name);
+    snprintf(result, 1024, "Equipped %s!", shop_items[actual_weapon_id].name);
 }
