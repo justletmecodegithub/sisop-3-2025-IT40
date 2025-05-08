@@ -38,19 +38,19 @@ int main() {
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
 
-    signal(SIGCHLD, SIG_IGN);  // Ignore SIGCHLD to prevent zombie processes
+    signal(SIGCHLD, SIG_IGN);  
 
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);  // Create server socket
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);  
     if (server_fd < 0) {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
 
-    // Set socket options for address reuse
+    
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    // Bind to the specified port
+    
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
