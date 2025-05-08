@@ -263,27 +263,28 @@ key_t get_system_key() {
 Fungsi untuk membuat shared memory
 ```bash
 void init_shared_memory() {
-    key_t key = get_system_key();
-    shm_id = shmget(key, sizeof(SystemData), IPC_CREAT | 0666);
-    if (shm_id == -1) {
+    key_t key = get_system_key(); //mendapatkan kunci unik dari file
+    shm_id = shmget(key, sizeof(SystemData), IPC_CREAT | 0666); //mendapatkan id shared memory untuk ukuran system data
+    if (shm_id == -1) { //jika gagal akan menampilkan pesan error
         perror("[!] shmget failed");
         exit(EXIT_FAILURE);
     }
 
-    sys_data = (SystemData*)shmat(shm_id, NULL, 0);
-    if (sys_data == (void*)-1) {
+    sys_data = (SystemData*)shmat(shm_id, NULL, 0); //attach shared memory ke proses ini
+    if (sys_data == (void*)-1) { //mengecek, jika gagal akan menampilkan pesan error
         perror("[!] shmat failed");
         exit(EXIT_FAILURE);
     }
 
+    //mencari info shared memory untuk cek proses pertama
     struct shmid_ds buf;
     shmctl(shm_id, IPC_STAT, &buf);
     if (buf.shm_nattch == 1) {
-        memset(sys_data, 0, sizeof(SystemData));
-	 sys_data->system_pid = getpid();
-        sys_data->system_active = 1;  
-        sem_init(&sys_data->hunter_sem, 1, 1);
-        sem_init(&sys_data->dungeon_sem, 1, 1);
+        memset(sys_data, 0, sizeof(SystemData)); //mengkosongkan semua field
+	 sys_data->system_pid = getpid(); //simpan pid proses system
+        sys_data->system_active = 1; //menandai system active 
+        sem_init(&sys_data->hunter_sem, 1, 1); //init untuk semaphore hunter
+        sem_init(&sys_data->dungeon_sem, 1, 1); // init untuk semaphore dungeon
         sys_data->system_active = 1;
         printf("[System] Initialized shared memory\n");
     }
@@ -293,24 +294,24 @@ void init_shared_memory() {
 Fungsi untuk menampilkan list hunter
 ```bash
 void list_hunters() {
-    sem_wait(&sys_data->hunter_sem);
+    sem_wait(&sys_data->hunter_sem); //mengunci akses ke data hunter saat ini agar hanya ada 1 proses yang memodifikasi
     printf("\n=== HUNTER INFO ===\n");
-    for (int i = 0; i < sys_data->num_hunters; i++) {
-        Hunter *h = &sys_data->hunters[i];
+    for (int i = 0; i < sys_data->num_hunters; i++) { //looping untuk sebanyak jumlah hunter
+        Hunter *h = &sys_data->hunters[i]; //ambil pointer hunter ke i agar lebih mudah untuk selanjutnya
         printf("%d. %s | Lv:%d ATK:%d HP:%d DEF:%d EXP:%d [%s]\n",
                i + 1, h->username, h->level, h->atk, h->hp, h->def, h->exp,
                h->banned ? "BANNED" : "ACTIVE");
     }
-    sem_post(&sys_data->hunter_sem);
+    sem_post(&sys_data->hunter_sem);//buka akses ke data hunter setelah selesai
 }
 ```
 
 Fungsi untuk menampilkan list dungeon
 ```bash
 void list_dungeons() {
-    sem_wait(&sys_data->dungeon_sem);
+    sem_wait(&sys_data->dungeon_sem); 
     printf("\n=== DUNGEON INFO ===\n");
-    for (int i = 0; i < sys_data->num_dungeons; i++) {
+    for (int i = 0; i < sys_data->num_dungeons; i++) { //looping sesuai sebanyak jumlah dungeon
         Dungeon *d = &sys_data->dungeons[i];
         printf("%d. %s | Lv %d+ | ATK:%d HP:%d DEF:%d EXP:%d\n",
                i + 1, d->name, d->min_level, d->atk, d->hp, d->def, d->exp);
@@ -331,17 +332,17 @@ void generate_dungeon() {
 
     sem_wait(&sys_data->dungeon_sem);
 
-    if (sys_data->num_dungeons >= MAX_DUNGEONS) {
+    if (sys_data->num_dungeons >= MAX_DUNGEONS) { //jika jumlah dungeon sudah maks
         printf("[!] Maximum dungeons reached\n");
         sem_post(&sys_data->dungeon_sem);
         return;
     }
 
-    Dungeon *d = &sys_data->dungeons[sys_data->num_dungeons];
-    int index = rand() % 11;
-    strncpy(d->name, names[index], MAX_NAME - 1);
+    Dungeon *d = &sys_data->dungeons[sys_data->num_dungeons]; // mengambil pointer ke dungeon berikutnya yang akan di isi
+    int index = rand() % 11; // memilih secara acak
+    strncpy(d->name, names[index], MAX_NAME - 1); 
     d->min_level = rand() % 5 + 1;
-    d->atk = rand() % 51 + 100;
+    d->atk = rand() % 51 + 100; 
     d->hp = rand() % 51 + 50;
     d->def = rand() % 26 + 25;
     d->exp = rand() % 151 + 150;
