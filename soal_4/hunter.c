@@ -50,8 +50,6 @@ void cleanup() {
     if (sys_data != NULL && sys_data != (void *)-1) {
         shmdt(sys_data);
     }
-    if (shm_id != -1) {
-    }
     exit(0);
 }
 
