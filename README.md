@@ -549,6 +549,155 @@ Jika ada pesanan dengan nama yang sama, hanya pesanan pertama yang diproses.
 Delivery agent tidak berhenti otomatis setelah semua pesanan selesai (loop infinit).
 
 
+# Soal Nomor 3
+dikerjakan oleh Ahsani Rakhman
+
+# Soal Shift Modul 3 - Sistem Operasi 2025
+## Soal 3: The Lost Dungeon
+
+### Penjelasan Umum
+Sistem ini terdiri dari tiga program utama:  
+- **dungeon.c**: Server untuk menangani koneksi pemain, logika dungeon, dan battle.  
+- **player.c**: Client untuk interaksi pemain dengan server.  
+- **shop.c**: Modul toko senjata dan inventory.  
+
+Fitur utama:  
+- Multiplayer via socket (RPC-like).  
+- Toko senjata dengan 5 pilihan (2 memiliki efek pasif).  
+- Mode pertarungan dengan musuh acak, health bar, dan sistem damage.  
+- Manajemen inventory dan stat pemain.  
+
+---
+
+### Struktur Kode
+1. **dungeon.c**  
+   - Menjadi server yang menerima koneksi dari `player.c`.  
+   - Menangani logika: stat pemain, battle, shop, dan inventory.  
+   - Port: **8080** (default).  
+
+2. **player.c**  
+   - Client GUI berbasis CLI dengan menu interaktif.  
+   - Terhubung ke `dungeon.c` untuk mengirim/menerima data.  
+
+3. **shop.c**  
+   - Mengelola daftar senjata, pembelian, dan equip senjata.  
+   - Terintegrasi dengan `dungeon.c`.  
+
+---
+
+### Fitur yang Diimplementasikan
+#### a. Server-Client via Socket (RPC-like)
+- **dungeon.c** membuat socket server dan menerima koneksi dari **player.c**.  
+- Setiap pemain memiliki ID unik berdasarkan socket.  
+- **Kekurangan**: Server tidak multi-threaded (hanya handle 1 client secara bergantian).  
+
+#### b. Main Menu Interaktif
+```plaintext
+==== MAIN MENU ====
+1. Show Player Stats
+2. Shop (Buy Weapons)
+3. View Inventory & Equip Weapons
+4. Battle Mode
+5. Exit Game
+Pemain memilih opsi via input angka.
+
+c. Player Stats
+Menampilkan:
+
+Gold
+
+Senjata yang dipakai
+
+Base Damage
+
+Jumlah kill
+Contoh:
+
+Gold: 500 | Equipped Weapon: Fists | Base Damage: 5 | Kills: 0
+d. Weapon Shop
+5 senjata dengan harga, damage, dan efek pasif:
+
+Terra Blade (50G, 10 DMG)
+
+Flint & Steel (150G, 25 DMG)
+
+Kitchen Knife (200G, 35 DMG)
+
+Staff of Light (120G, 20 DMG, 10% Insta-Kill)
+
+Dragon Claws (300G, 50 DMG, 30% Critical Chance)
+
+e. Inventory Management
+Menampilkan senjata yang dimiliki beserta efek pasif.
+
+Pemain bisa equip senjata untuk meningkatkan damage.
+Contoh:
+
+[1] Dragon Claws (Passive: 30% Crit Chance) (EQUIPPED)
+f. Battle Mode
+Musuh memiliki HP acak (50-200).
+
+Health bar visual: [==== ] 80/100 HP.
+
+Damage dihitung: Base Damage + random(0, Base Damage).
+
+Critical Hit (10% chance default) → Damage 2x.
+
+Reward gold acak setelah mengalahkan musuh.
+
+g. Error Handling
+Peringatan untuk input tidak valid di menu.
+Contoh:
+
+Invalid option. Please try again.
+Kekurangan & Perbaikan yang Diperlukan
+Multi-Client Support
+
+Server saat ini hanya menangani 1 client secara bergantian.
+
+Solusi: Implementasi threading di dungeon.c untuk handle multiple clients.
+
+Efek Pasif Senjata Belum Aktif
+
+Critical Hit menggunakan fixed 10% (tidak sesuai senjata).
+
+Solusi: Modifikasi logika critical di handle_battle() untuk membaca efek senjata.
+
+Insta-Kill untuk Staff of Light
+
+Efek 10% Insta-Kill belum diimplementasikan.
+
+Solusi: Tambahkan pengecekan passive di handle_battle().
+
+Race Condition
+
+Tidak ada mutex untuk shared data (misal: gold pemain).
+
+Solusi: Gunakan mutex/lock saat mengakses data pemain.
+
+Cara Menjalankan Program
+Kompilasi:
+
+bash
+gcc dungeon.c shop.c -o dungeon -lpthread
+gcc player.c -o player
+Jalankan Server:
+
+bash
+./dungeon
+Jalankan Client (di terminal lain):
+
+bash
+./player
+Contoh Interaksi:
+
+Pilih opsi 2 (Shop) → Beli senjata.
+
+Pilih opsi 3 (Inventory) → Equip senjata.
+
+Pilih opsi 4 (Battle) → Serang musuh dengan perintah attack.
+
+
 # Soal 4
 
 Dikerjakan oleh I Gede Bagus Saka Sinatrya/5027241088
