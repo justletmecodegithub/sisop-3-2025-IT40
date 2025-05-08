@@ -16,9 +16,9 @@ Dikerjakan oleh 5027241024
 #include <fcntl.h>
 #include <time.h>
 #include <errno.h>
-```c
-## 3. Konstanta dan Prototipe Fungsi
 ```
+## 3. Konstanta dan Prototipe Fungsi
+```c
 #define LISTEN_PORT 9090
 #define MAX_BUFFER 8192
 #define STORAGE_DIR "./data_store/"
@@ -32,7 +32,7 @@ int convert_hex_to_bin(const char *hex_str, unsigned char **bin_data);
 
 ## 4. Fungsi Utama: main
 
-```int main() {
+```cint main() {
     int server_fd, client_fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
@@ -98,7 +98,7 @@ int convert_hex_to_bin(const char *hex_str, unsigned char **bin_data);
 
 ## 5. Fungsi handle_connection
 Fungsi ini menangani komunikasi dengan klien setelah koneksi diterima.
-```
+```c
 void handle_connection(int client_fd) {
     char buffer[MAX_BUFFER];
     ssize_t bytes_received;
@@ -127,7 +127,7 @@ void handle_connection(int client_fd) {
 ## 6. Fungsi process_decryption
 Fungsi ini memproses permintaan dekripsi dan menyimpan hasilnya sebagai file.
 
-```
+```c
 void process_decryption(int client_fd, const char *hex_input) {
     unsigned char *binary_data = NULL;
     int binary_length = convert_hex_to_bin(hex_input, &binary_data);
@@ -161,7 +161,7 @@ void process_decryption(int client_fd, const char *hex_input) {
 ```
 ## 7. Fungsi process_download
 Fungsi ini menangani permintaan pengunduhan file dari server.
-```
+```c
 void process_download(int client_fd, const char *file_name) {
     char file_path[256];
     snprintf(file_path, sizeof(file_path), "%s%s", STORAGE_DIR, file_name);
@@ -184,7 +184,7 @@ void process_download(int client_fd, const char *file_name) {
 ```
 ## 8. Fungsi convert_hex_to_bin
 Fungsi ini mengonversi string hex menjadi data biner.
-```
+```c
 int convert_hex_to_bin(const char *hex_str, unsigned char **bin_data) {
     size_t hex_len = strlen(hex_str);
     if (hex_len % 2 != 0) return -1;
