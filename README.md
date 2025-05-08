@@ -552,9 +552,6 @@ Delivery agent tidak berhenti otomatis setelah semua pesanan selesai (loop infin
 # Soal Nomor 3
 dikerjakan oleh Ahsani Rakhman
 
-# Soal Shift Modul 3 - Sistem Operasi 2025
-## Soal 3: The Lost Dungeon
-
 ### Penjelasan Umum
 Sistem ini terdiri dari tiga program utama:  
 - **dungeon.c**: Server untuk menangani koneksi pemain, logika dungeon, dan battle.  
@@ -602,6 +599,7 @@ Fitur utama:
 Pemain memilih opsi via input angka.
 
 c. Player Stats
+```c
 Menampilkan:
 
 Gold
@@ -612,9 +610,11 @@ Base Damage
 
 Jumlah kill
 Contoh:
+```
 
 Gold: 500 | Equipped Weapon: Fists | Base Damage: 5 | Kills: 0
 d. Weapon Shop
+
 5 senjata dengan harga, damage, dan efek pasif:
 
 Terra Blade (50G, 10 DMG)
@@ -628,13 +628,16 @@ Staff of Light (120G, 20 DMG, 10% Insta-Kill)
 Dragon Claws (300G, 50 DMG, 30% Critical Chance)
 
 e. Inventory Management
+```
 Menampilkan senjata yang dimiliki beserta efek pasif.
 
 Pemain bisa equip senjata untuk meningkatkan damage.
 Contoh:
 
 [1] Dragon Claws (Passive: 30% Crit Chance) (EQUIPPED)
+``
 f. Battle Mode
+```
 Musuh memiliki HP acak (50-200).
 
 Health bar visual: [==== ] 80/100 HP.
@@ -644,8 +647,10 @@ Damage dihitung: Base Damage + random(0, Base Damage).
 Critical Hit (10% chance default) → Damage 2x.
 
 Reward gold acak setelah mengalahkan musuh.
+```
 
 g. Error Handling
+```
 Peringatan untuk input tidak valid di menu.
 Contoh:
 
@@ -696,7 +701,7 @@ Pilih opsi 2 (Shop) → Beli senjata.
 Pilih opsi 3 (Inventory) → Equip senjata.
 
 Pilih opsi 4 (Battle) → Serang musuh dengan perintah attack.
-
+```
 
 # Soal 4
 
