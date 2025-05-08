@@ -12,7 +12,7 @@
 #define SECRET_PATH "client/secrets/"
 #define OUTPUT_PATH "client/"
 
-// Fungsi reverse string
+
 void reverse(char *str) {
     int len = strlen(str);
     for (int i = 0; i < len / 2; i++) {
@@ -22,7 +22,7 @@ void reverse(char *str) {
     }
 }
 
-// Menu
+
 void show_menu() {
     printf("															                                                                                        		░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
     printf("                                                                                                                                                            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
@@ -98,7 +98,7 @@ void show_menu() {
     printf("Pilih menu: ");
 }
 
-// Koneksi ke server
+
 int connect_to_server() {
     int sock;
     struct sockaddr_in serv_addr;
@@ -121,7 +121,6 @@ int connect_to_server() {
     return sock;
 }
 
-// Kirim file untuk didekripsi
 void kirim_file() {
     char namafile[100];
     printf("Masukkan nama file di folder secrets (contoh: input_1.txt): ");
@@ -140,7 +139,6 @@ void kirim_file() {
     fread(teks, 1, sizeof(teks), fp);
     fclose(fp);
 
-    // Reverse teks sebelum dikirim
     reverse(teks);
 
     int sock = connect_to_server();
@@ -162,7 +160,7 @@ void kirim_file() {
     close(sock);
 }
 
-// Download file JPEG
+
 void download_file() {
     char filename[100];
     printf("Masukkan nama file JPEG (contoh: 1744401234.jpeg): ");
