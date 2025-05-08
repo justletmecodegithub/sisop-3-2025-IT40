@@ -1,5 +1,3 @@
-/* image_client.c */
-//im[ort]
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,18 +5,26 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <time.h>
 
-//librari9
 #define SERVER_IP "127.0.0.1"
-#define PORT 8080
-#define BUFFER_SIZE 2048
+#define PORT 9090
+#define BUFFER_SIZE 8192
 #define SECRET_PATH "client/secrets/"
 #define OUTPUT_PATH "client/"
 
+// Fungsi reverse string
+void reverse(char *str) {
+    int len = strlen(str);
+    for (int i = 0; i < len / 2; i++) {
+        char tmp = str[i];
+        str[i] = str[len - 1 - i];
+        str[len - 1 - i] = tmp;
+    }
+}
 
+// Menu
 void show_menu() {
-    printf("																	░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
+    printf("															                                                                                        		░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
     printf("                                                                                                                                                            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
     printf("                                                                                    .*((/(//(((((((((((((((##(*.                                            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
     printf("                                                                             ,((///////////(((((((((((((((((((((####(,                                      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
@@ -82,23 +88,24 @@ void show_menu() {
     printf("**********../#####%%%%%&&&&&&&%%%%#((((///////////((((####%%%%%&&&&&&&&&&%%&&&@@@@@@@@@@@@@&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&@@@&#(((/(##%%%%%%%%%%%%#%%%%%%%%%%%%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
     printf("***/*****// ,/##%%%%%%&&&&%%%%%%%##(((((///////////((####%%%%%&&&&&&@@@@@&&@@@@@@@@@@@@@@&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&@%#(((/(/###%%#%%%%%%%%##%%%%%%%%%%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
     printf("*/*///////(( ,*#%%%%%&&%%%%%%%%%##(/((((((///////((((####%%%%%&&&&&@@@@@@@@@@@@@@@@@@@@@&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&@%#(((((//###%%%###%%%%###%%%%%%%%%░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
-
-    printf("                                  +---------------------------------------+\n");
-    printf("                                  |         IMAGE CLIENT MENU             |\n");
-    printf("                                  +---------------------------------------+\n");
-    printf("                                  | 1. Kirim File untuk diubah jadi JPEG  |\n");
-    printf("                                  | 2. Download file JPEG dari server     |\n");
-    printf("                                  | 3. Keluar                             |\n");
-    printf("                                  +---------------------------------------+\n");
-    printf("                                  Pilih menu: ");
+    printf("\n+---------------------------------------+\n");
+    printf("|         IMAGE CLIENT MENU             |\n");
+    printf("+---------------------------------------+\n");
+    printf("| 1. Kirim File untuk diubah jadi JPEG  |\n");
+    printf("| 2. Download file JPEG dari server     |\n");
+    printf("| 3. Keluar                             |\n");
+    printf("+---------------------------------------+\n");
+    printf("Pilih menu: ");
 }
+
+// Koneksi ke server
 int connect_to_server() {
     int sock;
     struct sockaddr_in serv_addr;
 
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
-        perror("fail bikin socket");
+        perror("Gagal membuat socket");
         return -1;
     }
 
@@ -107,19 +114,20 @@ int connect_to_server() {
     serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        perror("gagal konek  server");
+        perror("Gagal terhubung ke server");
         close(sock);
         return -1;
     }
     return sock;
 }
 
+// Kirim file untuk didekripsi
 void kirim_file() {
     char namafile[100];
     printf("Masukkan nama file di folder secrets (contoh: input_1.txt): ");
     scanf("%s", namafile);
 
-    char filepath[150];
+    char filepath[256];
     snprintf(filepath, sizeof(filepath), "%s%s", SECRET_PATH, namafile);
 
     FILE *fp = fopen(filepath, "r");
@@ -132,23 +140,29 @@ void kirim_file() {
     fread(teks, 1, sizeof(teks), fp);
     fclose(fp);
 
+    // Reverse teks sebelum dikirim
+    reverse(teks);
+
     int sock = connect_to_server();
     if (sock == -1) return;
 
     char message[BUFFER_SIZE * 2];
-    snprintf(message, sizeof(message), "DECRYPT|%s", teks);
+    snprintf(message, sizeof(message), "DECRYPT::%s", teks);
     send(sock, message, strlen(message), 0);
 
-    char respon[100];
+    char respon[BUFFER_SIZE] = {0};
     int len = recv(sock, respon, sizeof(respon) - 1, 0);
     if (len > 0) {
         respon[len] = '\0';
-        printf("Response dari server: %s\n", respon);
+        printf("Respon dari server: %s\n", respon);
+    } else {
+        printf("Tidak ada respon dari server.\n");
     }
 
     close(sock);
 }
 
+// Download file JPEG
 void download_file() {
     char filename[100];
     printf("Masukkan nama file JPEG (contoh: 1744401234.jpeg): ");
@@ -157,21 +171,25 @@ void download_file() {
     int sock = connect_to_server();
     if (sock == -1) return;
 
-    char request[128];
-    snprintf(request, sizeof(request), "DOWNLOAD|%s", filename);
+    char request[256];
+    snprintf(request, sizeof(request), "DOWNLOAD::%s", filename);
     send(sock, request, strlen(request), 0);
 
     unsigned char data[BUFFER_SIZE] = {0};
     int received = recv(sock, data, sizeof(data), 0);
     if (received <= 0) {
-        printf("Gagal download atau file tidak ditemukan\n");
+        printf("Gagal download atau file tidak ditemukan.\n");
     } else {
-        char path[128];
+        char path[256];
         snprintf(path, sizeof(path), "%s%s", OUTPUT_PATH, filename);
         FILE *out = fopen(path, "wb");
-        fwrite(data, 1, received, out);
-        fclose(out);
-        printf("File disimpan sebagai %s\n", path);
+        if (!out) {
+            printf("Gagal menyimpan file.\n");
+        } else {
+            fwrite(data, 1, received, out);
+            fclose(out);
+            printf("File disimpan sebagai %s\n", path);
+        }
     }
 
     close(sock);
@@ -182,16 +200,17 @@ int main() {
     while (1) {
         show_menu();
         scanf("%d", &pilih);
+        getchar(); // Untuk konsumsi newline
 
         if (pilih == 1) {
             kirim_file();
         } else if (pilih == 2) {
             download_file();
         } else if (pilih == 3) {
-            printf("Menghentikan program.\n");
+            printf("Keluar dari program.\n");
             break;
         } else {
-            printf("Pilihan tidak valid.\n");
+            printf("Pilihan tidak valid!\n");
         }
     }
     return 0;
