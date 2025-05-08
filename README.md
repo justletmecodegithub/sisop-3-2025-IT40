@@ -891,7 +891,15 @@ int main() {
     return 0;
 }
 ```
+### Beberapa masalah yang terjadi
 
+![Image](https://github.com/user-attachments/assets/fc8c919e-b798-465b-a66f-48f9ab314840)
+
+![Image](https://github.com/user-attachments/assets/623be93d-16d9-4e44-8a42-662c95f4e32b)
+
+Hunter.c masih bisa berjalan tanpa menjalankan system.c terlebih dahulu.
+
+Shared memory tidak terhapus begitu keluar dari system.
 ### Revisi
 
 1. Hunter.c masih bisa berjalan tanpa menggunakan system.c, solusinya tambahkan fungsi dan beberapa syarat berikut.
