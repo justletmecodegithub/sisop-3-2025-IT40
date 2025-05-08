@@ -444,6 +444,111 @@ int main() {
 ```
 Semua fitur utama seperti dekripsi, download file JPEG, logging, dan penanganan error sudah kami coba implementasikan sesuai permintaan soal. Kalau ada kekurangan, semoga masih bisa dimaklumi. Terima kasih sudah membaca!
 
+# Soal Nomer 3 
+dikerjakan oleh 5027241024
+
+### Penjelasan Umum
+Sistem ini terdiri dari dua program utama: `delivery_agent.c` (untuk pengiriman Express) dan `dispatcher.c` (untuk manajemen pesanan oleh pengguna). Sistem menggunakan **shared memory** untuk menyimpan data pesanan dari file CSV dan mengelola pengiriman otomatis (Express) maupun manual (Reguler).
+
+---
+
+### Struktur Kode
+- **delivery_agent.c**: Menangani pengiriman otomatis oleh 3 agen (A, B, C) untuk pesanan bertipe Express.
+- **dispatcher.c**: Program utama untuk:
+  - Mengunduh dan memuat data pesanan ke shared memory.
+  - Menjalankan perintah pengiriman Reguler, pengecekan status, dan daftar pesanan.
+  - Mencatat log pengiriman.
+
+---
+
+### Spesifikasi Solusi
+#### a. Mengunduh File CSV dan Shared Memory
+- **Mekanisme**:  
+  - `dispatcher.c` mengunduh file `delivery_order.csv` menggunakan `curl`.  
+  - Data CSV dimuat ke shared memory dengan key `1234` untuk diakses oleh `delivery_agent.c` dan `dispatcher.c`.  
+  - Setiap pesanan disimpan dalam struktur `Pesanan` (nama, alamat, tipe, status).  
+
+#### b. Pengiriman Express oleh Agen
+- **Mekanisme**:  
+  - Tiga thread (Agen A, B, C) dijalankan oleh `delivery_agent.c`.  
+  - Setiap agen mencari pesanan Express dengan status **"Pending"** secara atomic (menggunakan `pthread_mutex`).  
+  - Jika ditemukan, status diubah menjadi nama agen (misal: "AGENT A"), dan log dicatat di `delivery.log`.  
+
+#### c. Pengiriman Reguler oleh Pengguna
+- **Mekanisme**:  
+  - Pengguna menjalankan `./dispatcher -deliver [Nama]` untuk mengirim pesanan Reguler.  
+  - Proses fork dibuat untuk menangani pengiriman, dengan nama agen sesuai argumen `[Nama]`.  
+  - Status pesanan diubah ke nama agen, dan log dicatat.  
+
+#### d. Fitur Tambahan
+- **Cek Status**:  
+  `./dispatcher -status [Nama]` → Menampilkan status pengiriman pesanan.  
+- **Daftar Pesanan**:  
+  `./dispatcher -list` → Menampilkan semua pesanan beserta statusnya.  
+- **Log**:  
+  `./dispatcher -log` → Menampilkan seluruh isi `delivery.log`.  
+
+---
+
+### Logging Format
+- **Express**:  
+  `[dd/mm/yyyy hh:mm:ss] [AGENT A/B/C] Express package delivered to [Nama] in [Alamat]`  
+- **Reguler**:  
+  `[dd/mm/yyyy hh:mm:ss] [AGENT <user>] Reguler package delivered to [Nama] in [Alamat]`  
+
+---
+
+### Cara Menjalankan Program
+1. **Kompilasi**:
+   ```bash
+   gcc dispatcher.c -o dispatcher
+   gcc delivery_agent.c -o delivery_agent -lpthread
+Jalankan Dispatcher (untuk memuat data ke shared memory):
+
+bash
+./dispatcher
+Jalankan Delivery Agent (untuk pengiriman Express):
+
+bash
+./delivery_agent
+Perintah Pengguna:
+
+Kirim pesanan Reguler:
+
+bash
+./dispatcher -deliver "Nama Agent" "Nama Pesanan"
+Cek status:
+
+bash
+./dispatcher -status "Nama Pesanan"
+Lihat daftar pesanan:
+
+bash
+./dispatcher -list
+Catatan Penting
+Shared Memory:
+
+Key: 1234.
+
+Pastikan tidak ada program lain yang menggunakan key yang sama.
+
+Thread Safety:
+
+Mutex digunakan untuk menghindari race condition saat agen mengakses shared memory.
+
+Batasan:
+
+Kapasitas maksimal pesanan: 100 (sesuai #define MAKS_PESANAN).
+
+Jika file CSV tidak ditemukan, program dispatcher akan gagal.
+
+Known Issues:
+
+Jika ada pesanan dengan nama yang sama, hanya pesanan pertama yang diproses.
+
+Delivery agent tidak berhenti otomatis setelah semua pesanan selesai (loop infinit).
+
+
 # Soal 4
 
 Dikerjakan oleh I Gede Bagus Saka Sinatrya/5027241088
