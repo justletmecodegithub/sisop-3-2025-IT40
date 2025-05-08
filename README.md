@@ -701,7 +701,7 @@ Pilih opsi 2 (Shop) → Beli senjata.
 Pilih opsi 3 (Inventory) → Equip senjata.
 
 Pilih opsi 4 (Battle) → Serang musuh dengan perintah attack.
-```
+
 
 # Soal 4
 
