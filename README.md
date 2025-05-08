@@ -1,4 +1,5 @@
 # Soal Nomor 1
+Repository ini dibuat untuk menyelesaikan soal 1 shift Modul 3 Sistem Operasi 2025. Di sini kami membangun sistem client-server sederhana yang bisa mengubah file teks terenkripsi jadi file JPEG menggunakan socket. Program client punya menu interaktif, dan server-nya berjalan di background sebagai daemon.
 Dikerjakan oleh 5027241024
 
 ## Skrip image_server.c
@@ -416,6 +417,7 @@ void download_file() {
 }
 ```
 
+
 ## Main Fucnttion
 ```
 int main() {
@@ -440,6 +442,7 @@ int main() {
 }
 
 ```
+Semua fitur utama seperti dekripsi, download file JPEG, logging, dan penanganan error sudah kami coba implementasikan sesuai permintaan soal. Kalau ada kekurangan, semoga masih bisa dimaklumi. Terima kasih sudah membaca!
 
 # Soal 4
 
