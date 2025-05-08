@@ -908,9 +908,9 @@ typedef struct {
     int max_health;
 } Enemy;
 ```
-health: HP saat ini.
+`health`: HP saat ini.
 
-max_health: HP maksimum.
+`max_health`: HP maksimum.
 
 fungsi eksternal
 ```c
@@ -1235,11 +1235,11 @@ int main() {
 ```
 Fungsi utama server.
 
-Membuka socket server di port 8080.
+Membuka socket server di `port 8080`.
 
-Mengatur socket agar bisa reuse.
+Mengatur `socket` agar bisa reuse.
 
-Menerima koneksi dan memanggil handle_client() untuk setiap koneksi.
+Menerima koneksi dan memanggil `handle_client()` untuk setiap koneksi.
 
 ## shop.c
 ```c
@@ -1265,10 +1265,8 @@ void print_menu() {
 void battle_mode(int sock) {
     char buffer[BUFFER_SIZE] = {0};
     
-    // Enter battle mode
     send(sock, "battle", 6, 0);
     
-    // Get initial battle message
     int bytes_read = read(sock, buffer, BUFFER_SIZE-1);
     if (bytes_read <= 0) return;
     buffer[bytes_read] = '\0';
@@ -1284,7 +1282,6 @@ void battle_mode(int sock) {
         if(strcmp(buffer, "attack") == 0 || strcmp(buffer, "exit") == 0) {
             send(sock, buffer, strlen(buffer), 0);
             
-            // Get server response
             memset(buffer, 0, BUFFER_SIZE);
             bytes_read = read(sock, buffer, BUFFER_SIZE-1);
             if (bytes_read <= 0) break;
@@ -1420,9 +1417,9 @@ define
 #define PORT 8080
 #define BUFFER_SIZE 1024
 ```
-PORT: Port server yang akan dihubungkan.
+`PORT`: Port server yang akan dihubungkan.
 
-BUFFER_SIZE: Ukuran buffer untuk komunikasi teks antara client-server.
+`BUFFER_SIZE`: Ukuran buffer untuk komunikasi teks antara client-server.
 
 fungsi-fungsi utama
 
@@ -1497,9 +1494,9 @@ Alurnya:
 
 3. Memasuki loop input attack atau exit:
 
-Jika attack, kirim ke server, tunggu respons (damage, HP musuh).
+Jika `attack`, kirim ke server, tunggu respons (damage, HP musuh).
 
-Jika exit, kirim perintah dan keluar dari loop jika server merespons `Exiting battle...`.
+Jika `exit`, kirim perintah dan keluar dari loop jika server merespons `Exiting battle...`.
 
 
 3.Fungsi: main()
@@ -1601,11 +1598,11 @@ Fungsi utama program player.
 
 1. Setup Socket Client
 
-socket(AF_INET, SOCK_STREAM, 0)
+`socket(AF_INET, SOCK_STREAM, 0)`
 
 Membuat socket TCP.
 
-Menghubungkan ke 127.0.0.1:8080.
+Menghubungkan ke `127.0.0.1:8080`.
 
 
 2. Loop Menu Utama
@@ -1794,19 +1791,19 @@ file header dan Define
 #include <stdlib.h>
 #include <string.h>
 ```
-stdio.h: untuk printf, snprintf, dll.
+`stdio.h`: untuk printf, snprintf, dll.
 
-stdlib.h: untuk fungsi umum seperti malloc, atoi, dll.
+`stdlib.h`: untuk fungsi umum seperti malloc, atoi, dll.
 
-string.h: untuk operasi string seperti strcpy, strcmp, strcat.
+`string.h`: untuk operasi string seperti strcpy, strcmp, strcat.
 
 ```c
 #define MAX_WEAPONS 5
 #define MAX_INVENTORY 10
 ```
-MAX_WEAPONS: Jumlah total senjata di toko.
+`MAX_WEAPONS`: Jumlah total senjata di toko.
 
-MAX_INVENTORY: Kapasitas maksimal senjata yang bisa disimpan pemain.
+`MAX_INVENTORY`: Kapasitas maksimal senjata yang bisa disimpan pemain.
 
 
 Struktur Data
@@ -2053,13 +2050,13 @@ Alur:
 1. Validasi ID input.
 
 
-2. Konversi ID ke indeks inventory.
+2. Konversi ID ke indeks `inventory`.
 
 
-3. Ambil actual_weapon_id dari array inventory.
+3. Ambil `actual_weapon_id` dari array `inventory`.
 
 
-4. Set equipped_weapon dan base_damage berdasarkan senjata yang dipilih.
+4. Set `equipped_weapon` dan `base_damage` berdasarkan senjata yang dipilih.
 
 
 5. Kirim pesan sukses: "Equipped Terra Blade!"
