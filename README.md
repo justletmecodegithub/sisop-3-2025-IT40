@@ -859,15 +859,15 @@ void ban_hunter() {
     scanf("%s", name);
 
     sem_wait(&sys_data->hunter_sem);
-    for (int i = 0; i < sys_data->num_hunters; i++) {
-        if (strcmp(sys_data->hunters[i].username, name) == 0) {
-            sys_data->hunters[i].banned = 1;
+    for (int i = 0; i < sys_data->num_hunters; i++) {  // looping untuk semua hunter
+        if (strcmp(sys_data->hunters[i].username, name) == 0) {  // mencari hunter yang username sama dengan nama
+            sys_data->hunters[i].banned = 1;  // set banned menjadi 1 yaitu true
             printf("[*] %s has been banned\n", name);
             sem_post(&sys_data->hunter_sem);
             return;
         }
     }
-    printf("Hunter not found\n");
+    printf("Hunter not found\n"); // jika nama hunter tidak ada
     sem_post(&sys_data->hunter_sem);
 }
 ```
@@ -880,9 +880,9 @@ void unban_hunter() {
     scanf("%s", name);
 
     sem_wait(&sys_data->hunter_sem);
-    for (int i = 0; i < sys_data->num_hunters; i++) {
+    for (int i = 0; i < sys_data->num_hunters; i++) {  // looping kesemua daftar hunter
         if (strcmp(sys_data->hunters[i].username, name) == 0) {
-            sys_data->hunters[i].banned = 0;
+            sys_data->hunters[i].banned = 0;  // set banned menjadi 0 (unban)
             printf("%s has been unbanned\n", name);
             sem_post(&sys_data->hunter_sem);
             return;
@@ -901,11 +901,11 @@ void reset_hunter() {
     scanf("%s", name);
 
     sem_wait(&sys_data->hunter_sem);
-    for (int i = 0; i < sys_data->num_hunters; i++) {
-        if (strcmp(sys_data->hunters[i].username, name) == 0) {
+    for (int i = 0; i < sys_data->num_hunters; i++) {  // looping pada semua hunter
+        if (strcmp(sys_data->hunters[i].username, name) == 0) {  // Mengecek apakah username hunter pada indeks i sama dengan input name
             Hunter *h = &sys_data->hunters[i];
-            h->level = 1; h->exp = 0; h->atk = 10; h->hp = 100; h->def = 5;
-            h->banned = 0;
+            h->level = 1; h->exp = 0; h->atk = 10; h->hp = 100; h->def = 5;  // mengatur ulang stat
+            h->banned = 0; // unban kemabli hunter jika sebelumnya di ban
             printf("[*] %s has been reset\n", name);
             sem_post(&sys_data->hunter_sem);
             return;
@@ -920,10 +920,10 @@ Fungsi untuk menghapus shared memory
 ```bash
 void cleanup(int sig) {
     printf("\nShutting down and cleaning up shared memory\n");
-    sem_destroy(&sys_data->hunter_sem);
+    sem_destroy(&sys_data->hunter_sem); // menghapus semaphore 
     sem_destroy(&sys_data->dungeon_sem);
-    shmdt(sys_data);
-    shmctl(shm_id, IPC_RMID, NULL);
+    shmdt(sys_data); // lepas pointer sys_data dari segment shared memory
+    shmctl(shm_id, IPC_RMID, NULL); // menghapus shared memory dari system
     printf("Cleanup complete. Shared memory removed.\n");
     exit(0);
 }
@@ -963,11 +963,11 @@ Untuk int main()
 ```bash
 
 int main() {
-    srand(time(NULL));
-    signal(SIGINT, cleanup);
+    srand(time(NULL)); // seed untuk angka acak dan menghasilkan waktu sekarang sebagai seed agar hasil random
+    signal(SIGINT, cleanup); // sinyal untuk SIGINT dan langsung clean up jika terpanggil
     init_shared_memory();
-    system("clear");
-    system_menu();
+    system("clear");  // membersihkan layar saat dijalankan
+    system_menu(); 
     return 0;
 }
 ```
@@ -1032,17 +1032,17 @@ void *heartbeat_checker(void *arg) {
     while (1) {
         sleep(HEARTBEAT_INTERVAL);
 
-        if (sys_data == NULL || sys_data == (void *)-1) {
+        if (sys_data == NULL || sys_data == (void *)-1) {  // mengecek apakah pointer ke shared memory tidak valid
             fprintf(stderr, "\n[!] ERROR: Shared memory is turned off. Turn off the hunter!\n");
-            exit(1); 
+            exit(1); // langsung exit dengan tanda error
         }
 
-        if (sys_data->system_active != 1) {
+        if (sys_data->system_active != 1) { // mengecek apakah flag system_active bernilai 1
             fprintf(stderr, "\n[!] System.c is shutting down. Turn of the hunter...\n");
             exit(1);  
         }
 
-        if (kill(sys_data->system_pid, 0) != 0 && errno == ESRCH) {
+        if (kill(sys_data->system_pid, 0) != 0 && errno == ESRCH) { // Mengecek apakah proses dengan PID system_pid masih hidup.
             fprintf(stderr, "\n[!] System.c is turned off. Shutdown Hunter...\n");
             exit(1);  
         }
@@ -1055,8 +1055,6 @@ Membersihkan resource
 void cleanup() {
     if (sys_data != NULL && sys_data != (void *)-1) {
         shmdt(sys_data);
-    }
-    if (shm_id != -1) {
     }
     exit(0);
 }
@@ -1076,12 +1074,12 @@ int login(const char *username) {
     sem_wait(&sys_data->hunter_sem);
     for (int i = 0; i < sys_data->num_hunters; i++) {
         if (strcmp(sys_data->hunters[i].username, username) == 0) {
-            if (sys_data->hunters[i].banned) {
+            if (sys_data->hunters[i].banned) { // mengecek apakah hunter di ban
                 printf("[!] You are banned.\n");
                 sem_post(&sys_data->hunter_sem);
                 return -1;
             }
-            sem_post(&sys_data->hunter_sem);
+            sem_post(&sys_data->hunter_sem); 
             printf("[+] Welcome back, %s!\n", username);
             return i;
         }
@@ -1098,9 +1096,9 @@ void show_dungeons(int level) {
     sem_wait(&sys_data->dungeon_sem);
     printf("\n=== AVAILABLE DUNGEONS ===\n");
     int count = 0;
-    for (int i = 0; i < sys_data->num_dungeons; i++) {
-        Dungeon *d = &sys_data->dungeons[i];
-        if (d->min_level <= level) {
+    for (int i = 0; i < sys_data->num_dungeons; i++) {  // looping keseluruh dungeon
+        Dungeon *d = &sys_data->dungeons[i];  // pointer yang menujuk dungeon saat ini 
+        if (d->min_level <= level) { 
             printf("%d. %s (Lv %d+) ATK+%d HP+%d DEF+%d EXP+%d\n", 
                    ++count, d->name, d->min_level, d->atk, d->hp, d->def, d->exp);
         }
@@ -1112,17 +1110,17 @@ void show_dungeons(int level) {
 Fungsi untuk raid
 ```bash
 void raid(int idx) {
-    if (shutdown_flag) return;
+    if (shutdown_flag) return; // cek flag shutdown
 
-    Hunter *h = &sys_data->hunters[idx];
-    show_dungeons(h->level);
+    Hunter *h = &sys_data->hunters[idx]; // ambil data hunter berdasarkan index
+    show_dungeons(h->level); // tampilkan dungeon yang tersedia sesuai level
     printf("Choose dungeon number to raid: ");
     int input, count = 0, selected = -1;
     scanf("%d", &input);
 
     sem_wait(&sys_data->dungeon_sem);
     for (int i = 0; i < sys_data->num_dungeons; i++) {
-        if (sys_data->dungeons[i].min_level <= h->level) {
+        if (sys_data->dungeons[i].min_level <= h->level) { // menghitung dungeon sesuai syarat level 
             count++;
             if (count == input) {
                 selected = i;
@@ -1148,7 +1146,7 @@ void raid(int idx) {
         printf("[+] LEVEL UP! Now Level %d\n", h->level);
     }
 
-    for (int i = selected; i < sys_data->num_dungeons - 1; i++) {
+    for (int i = selected; i < sys_data->num_dungeons - 1; i++){  // menghapus dungeon yang sudah berhasil di raid
         sys_data->dungeons[i] = sys_data->dungeons[i + 1];
     }
     sys_data->num_dungeons--;
@@ -1168,7 +1166,7 @@ void battle(int idx) {
     int list[MAX_HUNTERS], count = 0;
     printf("\n=== PVP LIST ===\n");
     sem_wait(&sys_data->hunter_sem);
-    for (int i = 0; i < sys_data->num_hunters; i++) {
+    for (int i = 0; i < sys_data->num_hunters; i++) { // looping unuk mencari hunter yang tersedia
         if (i != idx && !sys_data->hunters[i].banned) {
             Hunter *h = &sys_data->hunters[i];
             printf("%s - Total Power: %d\n", h->username, h->atk + h->hp + h->def);
@@ -1176,7 +1174,7 @@ void battle(int idx) {
         }
     }
     sem_post(&sys_data->hunter_sem);
-    if (count == 0) {
+    if (count == 0) { 
         printf("No opponents available.\n");
         press_enter();
         return;
@@ -1187,7 +1185,7 @@ void battle(int idx) {
     scanf("%s", target);
 
     int opp = -1;
-    for (int i = 0; i < sys_data->num_hunters; i++) {
+    for (int i = 0; i < sys_data->num_hunters; i++) { // mengecek validasi target
         if (i != idx && strcmp(sys_data->hunters[i].username, target) == 0 && !sys_data->hunters[i].banned) {
             opp = i;
             break;
@@ -1200,30 +1198,30 @@ void battle(int idx) {
         return;
     }
 
-    Hunter *enemy = &sys_data->hunters[opp];
-    int p1 = me->atk + me->hp + me->def;
-    int p2 = enemy->atk + enemy->hp + enemy->def;
+    Hunter *enemy = &sys_data->hunters[opp]; // pointer hunter target
+    int p1 = me->atk + me->hp + me->def; // total power diri sendiri
+    int p2 = enemy->atk + enemy->hp + enemy->def; // total power lawan
 
     printf("\nYou chose to battle %s\n", enemy->username);
     printf("Your Power: %d\nOpponent's Power: %d\n", p1, p2);
 
-    if (p1 >= p2) {
+    if (p1 >= p2) { // transfer stat lawan
         me->atk += enemy->atk;
         me->hp += enemy->hp;
         me->def += enemy->def;
         printf("Deleting defender's shared memory (shmid: %d)\n", enemy->shm_key);
 
-        for (int i = opp; i < sys_data->num_hunters - 1; i++)
+        for (int i = opp; i < sys_data->num_hunters - 1; i++) // hapus lawan ari system
             sys_data->hunters[i] = sys_data->hunters[i + 1];
         sys_data->num_hunters--;
 
         printf("Battle won! You acquired %s's stats\n", enemy->username);
-    } else {
+    } else { // jika lawan menang
         enemy->atk += me->atk;
         enemy->hp += me->hp;
         enemy->def += me->def;
 
-        for (int i = idx; i < sys_data->num_hunters - 1; i++)
+        for (int i = idx; i < sys_data->num_hunters - 1; i++) // hapus diri sendiri dari system
             sys_data->hunters[i] = sys_data->hunters[i + 1];
         sys_data->num_hunters--;
 
@@ -1241,13 +1239,13 @@ void toggle_notify(int idx) {
     if (shutdown_flag) return;
 
     Hunter *h = &sys_data->hunters[idx];
-    h->notification_on = !h->notification_on;
+    h->notification_on = !h->notification_on;  // status untuk notifikasi
     printf("[*] Notifications %s\n", h->notification_on ? "enabled" : "disabled");
-    if (h->notification_on) {
+    if (h->notification_on) { // mengecek jika notif aktif
         int *arg = malloc(sizeof(int));
         *arg = idx;
-        pthread_create(&notif_thread, NULL, notify_thread, arg);
-    } else {
+        pthread_create(&notif_thread, NULL, notify_thread, arg); // membuat thread baru jika notif aktif
+    } else { // jika tidak aktif
         pthread_cancel(notif_thread);
     }
     press_enter();
@@ -1257,14 +1255,14 @@ void toggle_notify(int idx) {
 ```bash
 void *notify_thread(void *arg) {
     int idx = *(int *)arg;
-    free(arg);
+    free(arg); // membebaskan memory yang dialokasikan
 
-    while (!shutdown_flag) {
-        if (sys_data->hunters[idx].notification_on) {
+    while (!shutdown_flag) { 
+        if (sys_data->hunters[idx].notification_on) { //
             sem_wait(&sys_data->dungeon_sem);
-            int found = 0;
-            for (int i = 0; i < sys_data->num_dungeons; i++) {
-                if (sys_data->dungeons[i].min_level <= sys_data->hunters[idx].level) {
+            int found = 0; 
+            for (int i = 0; i < sys_data->num_dungeons; i++) { 
+                if (sys_data->dungeons[i].min_level <= sys_data->hunters[idx].level) { // jika dungeon sesuai dengan level hunter
                     Dungeon *d = &sys_data->dungeons[i];
                     printf("\n=== HUNTER SYSTEM ===\n%s for minimum level %d opened!\n",
                            d->name, d->min_level);
@@ -1272,7 +1270,7 @@ void *notify_thread(void *arg) {
                     break;
                 }
             }
-            if (!found) {
+            if (!found) { // jika tidak ada dungeon yang sesuai
                 printf("\nNo suitable dungeons available.\n");
             }
             sem_post(&sys_data->dungeon_sem);
@@ -1287,7 +1285,7 @@ Fungsi untuk tampilan setiap akun hunter
 void dashboard(int idx) {
     int ch;
     do{
-        if(sys_data == NULL || sys_data->system_active != 1) {
+        if(sys_data == NULL || sys_data->system_active != 1) { // mengecek apakah system masih aktif
             exit(1);
 	}
 
@@ -1314,31 +1312,35 @@ void dashboard(int idx) {
 Untuk int main()
 ```bash
 int main() {
+    // menangani sinyal
     signal(SIGINT, handle_signal);
     signal(SIGTERM, handle_signal);
 
+    // mengecek apakah system sudah dijalankan terlebih dahulu
     key_t key = get_system_key();
     shm_id = shmget(key, sizeof(SystemData), 0666);
-    if (shm_id == -1) {
+    if (shm_id == -1) { 
         printf("[!] Run ./system first.\n");
         return 1;
     }
 
+    // attach shared memory
     sys_data = (SystemData *)shmat(shm_id, NULL, 0);
     if (sys_data == (void *)-1) {
         perror("shmat failed");
         return 1;
     }
 
+    // validasi status system
     if (sys_data->system_active != 1) {
         printf("[!] System is inactive. Please start the system first.\n");
         shmdt(sys_data);
         return 1;
     }
 
-    pthread_create(&heartbeat_thread, NULL, heartbeat_checker, NULL);
+    pthread_create(&heartbeat_thread, NULL, heartbeat_checker, NULL); // mengecek status system secara berkala
 
-    system("clear");
+    system("clear"); 
     int ch;
     char name[MAX_NAME];
     do {
@@ -1357,14 +1359,14 @@ int main() {
                 scanf("%s", name);
                 sem_wait(&sys_data->hunter_sem);
                 int exists = 0;
-                for (int i = 0; i < sys_data->num_hunters; i++) {
+                for (int i = 0; i < sys_data->num_hunters; i++) { // mengecek userbame apakah sudah digunakan
                     if (strcmp(sys_data->hunters[i].username, name) == 0) exists = 1;
                 }
                 if (exists) printf("[!] Username already taken\n");
-                else if (sys_data->num_hunters >= MAX_HUNTERS) printf("[!] Hunter list full\n");
+                else if (sys_data->num_hunters >= MAX_HUNTERS) printf("[!] Hunter list full\n"); // jika list hunter penuh
                 else {
                     Hunter *h = &sys_data->hunters[sys_data->num_hunters++];
-                    strcpy(h->username, name);
+                    strcpy(h->username, name); // set stat awal hunter
                     h->level = 1; h->exp = 0; h->atk = 10; h->hp = 100; h->def = 5;
                     h->banned = 0; h->notification_on = 0;
                     h->shm_key = ftok("/tmp", name[0]);
@@ -1377,6 +1379,7 @@ int main() {
             case 2: {
                 printf("Username: ");
                 scanf("%s", name);
+		// memverifikasi login dan status banned
                 int id = login(name);
                 if (id != -1) dashboard(id);
                 break;
