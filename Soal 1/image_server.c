@@ -121,7 +121,7 @@ int main() {
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
 
-    signal(SIGCHLD, SIG_IGN);  // Ignore SIGCHLD to prevent zombie processes
+    signal(SIGCHLD, SIG_IGN);  
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);  // Create server socket
     if (server_fd < 0) {
