@@ -444,7 +444,7 @@ int main() {
 ```
 Semua fitur utama seperti dekripsi, download file JPEG, logging, dan penanganan error sudah kami coba implementasikan sesuai permintaan soal. Kalau ada kekurangan, semoga masih bisa dimaklumi. Terima kasih sudah membaca!
 
-# Soal Nomer 3 
+# Soal Nomer 2 
 dikerjakan oleh 5027241024
 
 ### Penjelasan Umum
