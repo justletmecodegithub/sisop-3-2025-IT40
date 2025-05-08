@@ -32,7 +32,8 @@ int convert_hex_to_bin(const char *hex_str, unsigned char **bin_data);
 
 ## 4. Fungsi Utama: main
 
-```cint main() {
+```c
+int main() {
     int server_fd, client_fd;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
