@@ -549,8 +549,8 @@ Jika ada pesanan dengan nama yang sama, hanya pesanan pertama yang diproses.
 Delivery agent tidak berhenti otomatis setelah semua pesanan selesai (loop infinit).
 
 
-# Soal Nomor 3
-dikerjakan oleh Ahsani Rakhman
+# soal 3
+Dikerjakan oleh Muhammad Ahsani Taqwiim Rakhman/5027241099
 
 ### Penjelasan Umum
 Sistem ini terdiri dari tiga program utama:  
@@ -564,7 +564,6 @@ Fitur utama:
 - Mode pertarungan dengan musuh acak, health bar, dan sistem damage.  
 - Manajemen inventory dan stat pemain.  
 
----
 
 ### Struktur Kode
 1. **dungeon.c**  
@@ -580,77 +579,948 @@ Fitur utama:
    - Mengelola daftar senjata, pembelian, dan equip senjata.  
    - Terintegrasi dengan `dungeon.c`.  
 
----
+## dungeon.c
+library yang diperlukan
+```c
+#include <stdio.h>     
+#include <stdlib.h>      
+#include <string.h>     
+#include <unistd.h>      
+#include <arpa/inet.h>
+#include <time.h>      
+```
+`stdio.h` = Untuk fungsi input/output
+`stdlib.h `= Untuk fungsi umum
+`string.h` = Untuk manipulasi string
+`unistd.h` = Untuk Fungsi sitem
+`arpa/inet.h` = untuk komunikasi socket
+`time.h` = untuk waktu seperti strand
 
-### Fitur yang Diimplementasikan
-#### a. Server-Client via Socket (RPC-like)
-- **dungeon.c** membuat socket server dan menerima koneksi dari **player.c**.  
-- Setiap pemain memiliki ID unik berdasarkan socket.  
-- **Kekurangan**: Server tidak multi-threaded (hanya handle 1 client secara bergantian).  
+define 
+Digunakan untuk membuat konstanta atau alias.
+```c
+#define PORT 8080            
+#define MAX_CLIENTS 5         
+#define BUFFER_SIZE 1024      
+```
+Tujuannya agar:
 
-#### b. Main Menu Interaktif
-```plaintext
-==== MAIN MENU ====
+Kode lebih mudah dibaca.
+
+Mudah dimodifikasi (cukup ubah definisi satu kali).
+
+Struktur Data
+
+1. typedef struct Player
+
+Mewakili data pemain:
+```c
+typedef struct {
+    int gold;
+    int base_damage;
+    char equipped_weapon[50];
+    int kills;
+    int inventory[10];
+    int inventory_size;
+} Player;
+```
+`gold`: Emas pemain.
+
+`base_damage`: Kerusakan dasar.
+
+`equipped_weapon`: Senjata yang sedang dipakai.
+
+`kills`: Jumlah musuh yang dikalahkan.
+
+`inventory`: Daftar ID senjata yang dimiliki.
+
+`inventory_size`: Jumlah senjata dalam inventaris.
+
+
+2. typedef struct Enemy
+
+Mewakili data musuh:
+```c
+typedef struct {
+    int health;
+    int max_health;
+} Enemy;
+```
+health: HP saat ini.
+
+max_health: HP maksimum.
+
+fungsi eksternal
+```c
+extern void init_shop();
+extern char* get_shop_menu();
+extern void buy_weapon(int weapon_id, Player* player, char* result);
+extern void get_inventory(Player* player, char* inventory);
+extern void equip_weapon(int weapon_id, Player* player, char* result);
+```
+Ini didefinisikan di file lain:
+
+`init_shop()`: Inisialisasi daftar senjata di toko.
+
+`get_shop_menu()`: Mengembalikan string daftar senjata yang bisa dibeli.
+
+`buy_weapon()`: Melakukan pembelian senjata, cek gold, dan update inventory.
+
+`get_inventory()`: Mengembalikan daftar senjata milik pemain.
+
+`equip_weapon()`: Mengatur senjata terpakai dan update base_damage.
+
+Fungsi-Fungsi Utama
+
+1. send_battle_prompt(int client_socket, Enemy* enemy)
+   ```c
+   void send_battle_prompt(int client_socket, Enemy* enemy) {
+    char health_bar[11];
+    int filled_segments = (enemy->health * 10) / enemy->max_health;
+    
+    for (int i = 0; i < 10; i++) {
+        health_bar[i] = (i < filled_segments) ? '=' : ' ';
+    }
+    health_bar[10] = '\0';
+    
+    char prompt[BUFFER_SIZE];
+    snprintf(prompt, BUFFER_SIZE, 
+        "BATTLE STARTED ===\n"
+        "Enemy appeared with:\n"
+        "[%s] %d/%d HP\n"
+        "Type 'attack' to attack or 'exit' to leave battle.\n"
+        "> ",
+        health_bar, enemy->health, enemy->max_health);
+    
+    send(client_socket, prompt, strlen(prompt), 0);
+   }
+   ```
+
+Mengirim prompt pertempuran kepada pemain.
+
+Membuat bar HP musuh (grafik sederhana).
+
+Mengirim pesan seperti:
+
+```bash
+BATTLE STARTED ===
+Enemy appeared with:
+[====      ] 40/100 HP
+Type 'attack' to attack or 'exit' to leave battle.
+>
+```
+
+2. send_battle_result(int client_socket, Enemy* enemy, int damage, int is_critical)
+```c
+void send_battle_result(int client_socket, Enemy* enemy, int damage, int is_critical) {
+    char health_bar[11];
+    int filled_segments = (enemy->health * 10) / enemy->max_health;
+    
+    for (int i = 0; i < 10; i++) {
+        health_bar[i] = (i < filled_segments) ? '=' : ' ';
+    }
+    health_bar[10] = '\0';
+    
+    char result[BUFFER_SIZE];
+    if (is_critical) {
+        snprintf(result, BUFFER_SIZE,
+            "== CRITICAL HIT! ==\n"
+            "You dealt %d damage!\n"
+            "=== ENEMY STATUS ===\n"
+            "Enemy health: [%s] %d/%d HP\n"
+            "> ",
+            damage, health_bar, enemy->health, enemy->max_health);
+    } else {
+        snprintf(result, BUFFER_SIZE,
+            "You dealt %d damage!\n"
+            "=== ENEMY STATUS ===\n"
+            "Enemy health: [%s] %d/%d HP\n"
+            "> ",
+            damage, health_bar, enemy->health, enemy->max_health);
+    }
+send(client_socket, result, strlen(result), 0);
+}
+```
+Mengirim hasil serangan setelah pemain menyerang musuh.
+
+Menampilkan `damage` yang diberikan.
+
+Jika `is_critical` (serangan kritis), damage digandakan dan ditampilkan berbeda.
+
+Menampilkan bar HP musuh yang diperbarui.
+
+
+3. handle_battle(int client_socket, int player_id)
+```c
+void handle_battle(int client_socket, int player_id) {
+    char buffer[BUFFER_SIZE] = {0};
+    
+    current_enemies[player_id].max_health = 50 + (rand() % 151);
+    current_enemies[player_id].health = current_enemies[player_id].max_health;
+    
+    send_battle_prompt(client_socket, &current_enemies[player_id]);
+    
+    while(1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_read = read(client_socket, buffer, BUFFER_SIZE-1);
+        if (bytes_read <= 0) break;
+        
+        buffer[strcspn(buffer, "\r\n")] = 0;
+        
+        if(strcmp(buffer, "attack") == 0) {
+            if(current_enemies[player_id].health <= 0) {
+                send(client_socket, "No enemy to attack!\n> ", 21, 0);
+                continue;
+            }
+            
+            int damage = players[player_id].base_damage + (rand() % (players[player_id].base_damage + 1));
+            int is_critical = (rand() % 10 == 0);
+            if (is_critical) damage *= 2;
+            
+            current_enemies[player_id].health -= damage;
+            
+            if(current_enemies[player_id].health <= 0) {
+                players[player_id].kills++;
+                int reward = 50 + (rand() % 101);
+                players[player_id].gold += reward;
+                
+                char victory_msg[BUFFER_SIZE];
+                snprintf(victory_msg, BUFFER_SIZE, 
+                    "You defeated the enemy!\n"
+                    "=== REWARD ===\n"
+                    "You earned %d gold!\n"
+                    "=== NEW ENEMY ===\n"
+                    "> ",
+                    reward);
+                send(client_socket, victory_msg, strlen(victory_msg), 0);
+                
+                current_enemies[player_id].max_health = 50 + (rand() % 151);
+                current_enemies[player_id].health = current_enemies[player_id].max_health;
+            } else {
+                send_battle_result(client_socket, &current_enemies[player_id], damage, is_critical);
+            }
+        }
+        else if(strcmp(buffer, "exit") == 0) {
+            send(client_socket, "Exiting battle...\n", 18, 0);
+            break;
+        }
+        else {
+            send(client_socket, "Invalid command. Type 'attack' or 'exit'.\n> ", 42, 0);
+        }
+    }
+}
+```
+Loop utama pertarungan pemain dengan musuh.
+
+Inisialisasi musuh baru.
+
+Menerima perintah `attack` atau `exit`:
+
+`attack`: Hitung damage acak berdasarkan base_damage, kadang critical hit.
+
+Jika musuh kalah:
+
+Tambah `kill` dan `gold`.
+
+Kirim pesan kemenangan.
+
+Spawn musuh baru.
+
+
+Jika musuh belum mati:
+
+Kirim update status musuh.
+
+
+`exit`: Keluar dari mode battle.
+
+
+
+4. handle_client(int client_socket)
+```c
+void handle_client(int client_socket) {
+    char buffer[BUFFER_SIZE] = {0};
+    int player_id = client_socket % MAX_CLIENTS;
+    
+    players[player_id].gold = 500;
+    strcpy(players[player_id].equipped_weapon, "Fists");
+    players[player_id].base_damage = 5;
+    players[player_id].kills = 0;
+    players[player_id].inventory_size = 0;
+    
+    init_shop();
+    
+    while(1) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytes_read = read(client_socket, buffer, BUFFER_SIZE-1);
+        if (bytes_read <= 0) break;
+        
+        buffer[strcspn(buffer, "\r\n")] = 0;
+        
+        if(strcmp(buffer, "stats") == 0) {
+            char stats[BUFFER_SIZE];
+            snprintf(stats, BUFFER_SIZE, 
+                "Gold: %d | Equipped Weapon: %s | Base Damage: %d | Kills: %d",
+                players[player_id].gold, 
+                players[player_id].equipped_weapon, 
+                players[player_id].base_damage, 
+                players[player_id].kills);
+            send(client_socket, stats, strlen(stats), 0);
+        }
+        else if(strcmp(buffer, "shop") == 0) {
+            send(client_socket, get_shop_menu(), strlen(get_shop_menu()), 0);
+            
+            
+            memset(buffer, 0, BUFFER_SIZE);
+            bytes_read = read(client_socket, buffer, BUFFER_SIZE-1);
+            if (bytes_read <= 0) break;
+            buffer[strcspn(buffer, "\r\n")] = 0;
+            
+            char result[BUFFER_SIZE];
+            buy_weapon(atoi(buffer), &players[player_id], result);
+            send(client_socket, result, strlen(result), 0);
+        }
+        else if(strcmp(buffer, "inventory") == 0) {
+            char inventory[BUFFER_SIZE];
+            get_inventory(&players[player_id], inventory);
+            send(client_socket, inventory, strlen(inventory), 0);
+            
+            
+            memset(buffer, 0, BUFFER_SIZE);
+            bytes_read = read(client_socket, buffer, BUFFER_SIZE-1);
+            if (bytes_read <= 0) break;
+            buffer[strcspn(buffer, "\r\n")] = 0;
+            
+            char equip_result[BUFFER_SIZE];
+            equip_weapon(atoi(buffer), &players[player_id], equip_result);
+            send(client_socket, equip_result, strlen(equip_result), 0);
+        }
+        else if(strcmp(buffer, "battle") == 0) {
+            handle_battle(client_socket, player_id);
+        }
+        else if(strcmp(buffer, "exit") == 0) {
+            break;
+        }
+    }
+    
+    close(client_socket);
+}
+```
+Fungsi utama untuk menangani satu klien.
+
+Menginisialisasi data pemain (gold, weapon, dll.).
+
+Menangani perintah-perintah dari pemain:
+
+`stats`: Menampilkan statistik pemain.
+
+`shop`: Tampilkan menu toko, kemudian beli item.
+
+`inventory`: Tampilkan inventaris, lalu bisa memilih untuk equip senjata.
+
+`battle`: Masuk mode pertempuran.
+
+`exit`: Keluar dan tutup koneksi.
+
+5. main()
+```c
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    
+    srand(time(NULL));
+    
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+    
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+    
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    if (listen(server_fd, MAX_CLIENTS) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+    
+    printf("Dungeon server running on port %d\n", PORT);
+    
+    while(1) {
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
+            perror("accept");
+            continue;
+        }
+        
+        printf("New connection from %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+        handle_client(new_socket);
+    }
+    
+    return 0;
+}
+```
+Fungsi utama server.
+
+Membuka socket server di port 8080.
+
+Mengatur socket agar bisa reuse.
+
+Menerima koneksi dan memanggil handle_client() untuk setiap koneksi.
+
+## shop.c
+
+file header
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+```
+
+
+`stdio.h` & `stdlib.h`: I/O standar dan fungsi umum.
+
+`string.h`: Untuk manipulasi string.
+
+`unistd.h`: Untuk fungsi sistem seperti read, write, close.
+
+`arpa/inet.h`: Untuk pengaturan koneksi socket TCP/IP.
+
+
+define
+```c
+#define PORT 8080
+#define BUFFER_SIZE 1024
+```
+PORT: Port server yang akan dihubungkan.
+
+BUFFER_SIZE: Ukuran buffer untuk komunikasi teks antara client-server.
+
+fungsi-fungsi utama
+
+1.Fungsi: print_menu()
+```c
+void print_menu() {
+    printf("\n==== MAIN MENU ====\n");
+    printf("1. Show Player Stats\n");
+    printf("2. Shop (Buy Weapons)\n");
+    printf("3. View Inventory & Equip Weapons\n");
+    printf("4. Battle Mode\n");
+    printf("5. Exit Game\n");
+    printf("Choose an option: ");
+}
+```
+Menampilkan menu utama:
+
 1. Show Player Stats
 2. Shop (Buy Weapons)
 3. View Inventory & Equip Weapons
 4. Battle Mode
 5. Exit Game
-Pemain memilih opsi via input angka.
 
-c. Player Stats
+
+2. Fungsi: battle_mode(int sock)
 ```c
-Menampilkan:
-
-Gold
-
-Senjata yang dipakai
-
-Base Damage
-
-Jumlah kill
-Contoh:
+void battle_mode(int sock) {
+    char buffer[BUFFER_SIZE] = {0};
+    
+    send(sock, "battle", 6, 0);
+    
+    int bytes_read = read(sock, buffer, BUFFER_SIZE-1);
+    if (bytes_read <= 0) return;
+    buffer[bytes_read] = '\0';
+    printf("%s", buffer);
+    
+    while(1) {
+        printf("> ");
+        fflush(stdout);
+        
+        if (fgets(buffer, BUFFER_SIZE, stdin) == NULL) break;
+        buffer[strcspn(buffer, "\n")] = 0;
+        
+        if(strcmp(buffer, "attack") == 0 || strcmp(buffer, "exit") == 0) {
+            send(sock, buffer, strlen(buffer), 0);
+            
+            memset(buffer, 0, BUFFER_SIZE);
+            bytes_read = read(sock, buffer, BUFFER_SIZE-1);
+            if (bytes_read <= 0) break;
+            buffer[bytes_read] = '\0';
+            
+            printf("%s", buffer);
+            
+            if(strcmp(buffer, "Exiting battle...\n") == 0) {
+                break;
+            }
+        } else {
+            printf("Invalid command. Type 'attack' or 'exit'\n");
+        }
+    }
+}
 ```
+Masuk ke mode pertarungan.
 
-Gold: 500 | Equipped Weapon: Fists | Base Damage: 5 | Kills: 0
-d. Weapon Shop
+Alurnya:
 
-5 senjata dengan harga, damage, dan efek pasif:
+1. Mengirim `battle` ke server.
 
-Terra Blade (50G, 10 DMG)
 
-Flint & Steel (150G, 25 DMG)
+2. Menerima prompt awal pertarungan dari server.
 
-Kitchen Knife (200G, 35 DMG)
 
-Staff of Light (120G, 20 DMG, 10% Insta-Kill)
+3. Memasuki loop input attack atau exit:
 
-Dragon Claws (300G, 50 DMG, 30% Critical Chance)
+Jika attack, kirim ke server, tunggu respons (damage, HP musuh).
 
-e. Inventory Management
+Jika exit, kirim perintah dan keluar dari loop jika server merespons `Exiting battle...`.
+
+
+3.Fungsi: main()
+```c
+int main() {
+    int sock = 0;
+    struct sockaddr_in serv_addr;
+    char buffer[BUFFER_SIZE] = {0};
+    
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        printf("\n Socket creation error \n");
+        return -1;
+    }
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+    
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+        printf("\nInvalid address/ Address not supported \n");
+        return -1;
+    }
+    
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        printf("\nConnection Failed \n");
+        return -1;
+    }
+    
+    printf("Connected to dungeon server\n");
+    
+    int choice;
+    while(1) {
+        print_menu();
+        if (scanf("%d", &choice) != 1) {
+            while (getchar() != '\n');
+            printf("Invalid input. Please enter a number.\n");
+            continue;
+        }
+        getchar();
+        
+        switch(choice) {
+            case 1:
+                send(sock, "stats", 5, 0);
+                memset(buffer, 0, BUFFER_SIZE);
+                read(sock, buffer, BUFFER_SIZE);
+                printf("\n=== PLAYER STATS ===\n%s\n", buffer);
+                break;
+                
+            case 2:
+                send(sock, "shop", 4, 0);
+                memset(buffer, 0, BUFFER_SIZE);
+                read(sock, buffer, BUFFER_SIZE);
+                printf("\n%s", buffer);
+                
+                printf("Enter weapon number to buy (0 to cancel): ");
+                fgets(buffer, BUFFER_SIZE, stdin);
+                buffer[strcspn(buffer, "\n")] = 0;
+                send(sock, buffer, strlen(buffer), 0);
+                
+                memset(buffer, 0, BUFFER_SIZE);
+                read(sock, buffer, BUFFER_SIZE);
+                printf("\n%s\n", buffer);
+                break;
+                
+            case 3:
+                send(sock, "inventory", 9, 0);
+                memset(buffer, 0, BUFFER_SIZE);
+                read(sock, buffer, BUFFER_SIZE);
+                printf("\n%s", buffer);
+                
+                printf("Enter weapon number to equip (0 to cancel): ");
+                fgets(buffer, BUFFER_SIZE, stdin);
+                buffer[strcspn(buffer, "\n")] = 0;
+                send(sock, buffer, strlen(buffer), 0);
+                
+                memset(buffer, 0, BUFFER_SIZE);
+                read(sock, buffer, BUFFER_SIZE);
+                printf("\n%s\n", buffer);
+                break;
+                
+            case 4:
+                battle_mode(sock);
+                break;
+                
+            case 5:
+                send(sock, "exit", 4, 0);
+                close(sock);
+                return 0;
+                
+            default:
+                printf("Invalid option. Please try again.\n");
+        }
+    }
+    
+    close(sock);
+    return 0;
+}
 ```
-Menampilkan senjata yang dimiliki beserta efek pasif.
+Fungsi utama program player.
 
-Pemain bisa equip senjata untuk meningkatkan damage.
-Contoh:
+1. Setup Socket Client
 
-[1] Dragon Claws (Passive: 30% Crit Chance) (EQUIPPED)
-``
-f. Battle Mode
+socket(AF_INET, SOCK_STREAM, 0)
+
+Membuat socket TCP.
+
+Menghubungkan ke 127.0.0.1:8080.
+
+
+2. Loop Menu Utama
+
+Setelah terhubung, tampilkan menu dan proses pilihan pemain:
+
+Case 1: Show Player Stats
+
+Kirim `stats` ke server.
+
+Terima dan tampilkan statistik.
+
+
+Case 2: Shop
+
+Kirim `shop` ke server.
+
+Tampilkan daftar senjata.
+
+Minta input ID senjata yang ingin dibeli.
+
+Kirim ID ke server.
+
+Terima dan tampilkan hasil pembelian.
+
+
+Case 3: Inventory
+
+Kirim `inventory` ke server.
+
+Tampilkan daftar senjata.
+
+Minta input ID senjata untuk equip.
+
+Kirim ID ke server.
+
+Tampilkan hasil equip.
+
+
+Case 4: Battle Mode
+
+Memanggil fungsi `battle_mode(sock)`.
+
+
+Case 5: Exit
+
+Kirim `exit` ke server.
+
+Tutup koneksi dan keluar.
+
+##shop.c
+
+file header dan Define
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 ```
-Musuh memiliki HP acak (50-200).
+stdio.h: untuk printf, snprintf, dll.
 
-Health bar visual: [==== ] 80/100 HP.
+stdlib.h: untuk fungsi umum seperti malloc, atoi, dll.
 
-Damage dihitung: Base Damage + random(0, Base Damage).
+string.h: untuk operasi string seperti strcpy, strcmp, strcat.
 
-Critical Hit (10% chance default) → Damage 2x.
-
-Reward gold acak setelah mengalahkan musuh.
+```c
+#define MAX_WEAPONS 5
+#define MAX_INVENTORY 10
 ```
+MAX_WEAPONS: Jumlah total senjata di toko.
 
-g. Error Handling
+MAX_INVENTORY: Kapasitas maksimal senjata yang bisa disimpan pemain.
+
+
+Struktur Data
+
+Player
+```c
+typedef struct {
+    int gold;
+    int base_damage;
+    char equipped_weapon[50];
+    int kills;
+    int inventory[10];             
+    int inventory_size;
+} Player;
 ```
+Mewakili data pemain.
+
+Weapon
+```
+typedef struct {
+    char name[50];
+    int price;
+    int damage;
+    char passive[100];
+} Weapon;
+```
+Mewakili senjata di toko:
+
+name: Nama senjata.
+
+price: Harga senjata.
+
+damage: Damage saat digunakan.
+
+passive: Efek pasif tambahan.
+
+
+```c
+Weapon shop_items[MAX_WEAPONS];
+```
+Array global yang menyimpan semua senjata yang tersedia di toko.
+
+fungsi-fungsi utama
+
+1. Fungsi init_shop()
+```c
+void init_shop() {
+    strcpy(shop_items[0].name, "Terra Blade");
+    shop_items[0].price = 50;
+    shop_items[0].damage = 10;
+    strcpy(shop_items[0].passive, "None");
+    
+    strcpy(shop_items[1].name, "Flint & Steel");
+    shop_items[1].price = 150;
+    shop_items[1].damage = 25;
+    strcpy(shop_items[1].passive, "None");
+    
+    strcpy(shop_items[2].name, "Kitchen Knife");
+    shop_items[2].price = 200;
+    shop_items[2].damage = 35;
+    strcpy(shop_items[2].passive, "None");
+    
+    strcpy(shop_items[3].name, "Staff of Light");
+    shop_items[3].price = 120;
+    shop_items[3].damage = 20;
+    strcpy(shop_items[3].passive, "10% Insta-Kill Chance");
+    
+    strcpy(shop_items[4].name, "Dragon Claws");
+    shop_items[4].price = 300;
+    shop_items[4].damage = 50;
+    strcpy(shop_items[4].passive, "30% Crit Chance");
+}
+
+```
+Inisialisasi data senjata:
+
+Mengisi nama, harga, damage, dan passive efek dari setiap senjata.
+
+Fungsi ini harus dipanggil satu kali di awal server, agar data senjata siap digunakan.
+
+
+Contoh senjata:
+
+"Dragon Claws" - 300 gold, 50 damage, 30% crit chance
+
+
+---
+
+2. Fungsi get_shop_menu()
+```
+char* get_shop_menu() {
+    static char menu[1024];
+    snprintf(menu, sizeof(menu),
+        "\n=== WEAPON SHOP ===\n"
+        "[1] %s - Price: %d gold, Damage: %d\n"
+        "[2] %s - Price: %d gold, Damage: %d\n"
+        "[3] %s - Price: %d gold, Damage: %d\n"
+        "[4] %s - Price: %d gold, Damage: %d (Passive: %s)\n"
+        "[5] %s - Price: %d gold, Damage: %d (Passive: %s)\n"
+        "Enter weapon number to buy (0 to cancel): ",
+        shop_items[0].name, shop_items[0].price, shop_items[0].damage,
+        shop_items[1].name, shop_items[1].price, shop_items[1].damage,
+        shop_items[2].name, shop_items[2].price, shop_items[2].damage,
+        shop_items[3].name, shop_items[3].price, shop_items[3].damage, shop_items[3].passive,
+        shop_items[4].name, shop_items[4].price, shop_items[4].damage, shop_items[4].passive);
+    return menu;
+}
+```
+Mengembalikan menu senjata dalam format teks.
+
+Menggunakan snprintf untuk menyusun string senjata dengan harga, damage, dan passive (jika ada).
+
+Dikembalikan ke klien saat pemain memilih "shop".
+
+
+Penting: static char menu[1024] dipakai agar buffer tetap tersedia setelah fungsi keluar.
+
+
+3. Fungsi buy_weapon(int weapon_id, Player* player, char* result)
+```c
+void buy_weapon(int weapon_id, Player* player, char* result) {
+    if (weapon_id < 1 || weapon_id > MAX_WEAPONS) {
+        snprintf(result, 1024, "Invalid weapon choice!");
+        return;
+    }
+    
+    weapon_id--;
+    
+    if (player->gold < shop_items[weapon_id].price) {
+        snprintf(result, 1024, "Not enough gold!");
+        return;
+    }
+    
+    if (player->inventory_size >= MAX_INVENTORY) {
+        snprintf(result, 1024, "Inventory full!");
+        return;
+    }
+    
+    player->inventory[player->inventory_size] = weapon_id;
+    player->inventory_size++;
+    player->gold -= shop_items[weapon_id].price;
+    
+    snprintf(result, 1024, "Purchase successful!");
+}
+```
+Membeli senjata berdasarkan input dari pemain.
+
+Alur logika:
+
+1. Cek validitas ID senjata (1-5).
+
+
+2. Kurangi 1 untuk konversi ke indeks array (0-4).
+
+
+3. Cek apakah pemain punya cukup gold.
+
+
+4. Cek apakah inventaris sudah penuh.
+
+
+5. Jika valid:
+
+Tambah senjata ke inventory.
+
+Kurangi gold pemain.
+
+Kirim pesan sukses.
+
+
+
+6. Jika tidak valid:
+
+Kirim pesan kesalahan ("Inventory full!", "Not enough gold!", dll.)
+
+
+
+4. Fungsi get_inventory(Player* player, char* inventory)
+```c
+void get_inventory(Player* player, char* inventory) {
+    char temp[1024] = "\n=== YOUR INVENTORY ===\n";
+    
+    for (int i = 0; i < player->inventory_size; i++) {
+        int weapon_id = player->inventory[i];
+        char item[256];
+        if (strcmp(shop_items[weapon_id].passive, "None") == 0) {
+            snprintf(item, sizeof(item), "[%d] %s\n", i+1, shop_items[weapon_id].name);
+        } else {
+            snprintf(item, sizeof(item), "[%d] %s (Passive: %s)\n", i+1, 
+                    shop_items[weapon_id].name, shop_items[weapon_id].passive);
+        }
+        strcat(temp, item);
+    }
+    
+    strcat(temp, "Enter weapon number to equip (0 to cancel): ");
+    strcpy(inventory, temp);
+}
+```
+Menyusun dan mengirim string daftar senjata yang dimiliki pemain.
+
+Alur:
+
+1. Loop semua senjata yang dimiliki.
+
+
+2. Ambil nama dan efek passive.
+
+
+3. Tambahkan ke string temp dengan format:
+
+[1] Terra Blade
+[2] Staff of Light (Passive: 10% Insta-Kill Chance)
+
+
+4. Tambahkan prompt:
+
+Enter weapon number to equip (0 to cancel):
+
+
+5. Salin hasil akhir ke inventory.
+
+
+5. Fungsi equip_weapon(int weapon_id, Player* player, char* result)
+```c
+void equip_weapon(int weapon_id, Player* player, char* result) {
+    if (weapon_id < 1 || weapon_id > player->inventory_size) {
+        snprintf(result, 1024, "Invalid weapon choice!");
+        return;
+    }
+    
+    weapon_id--;
+    int actual_weapon_id = player->inventory[weapon_id];
+    
+    strcpy(player->equipped_weapon, shop_items[actual_weapon_id].name);
+    player->base_damage = shop_items[actual_weapon_id].damage;
+    
+    snprintf(result, 1024, "Equipped %s!", shop_items[actual_weapon_id].name);
+}
+```
+Memilih dan menggunakan senjata dari inventory.
+
+Alur:
+
+1. Validasi ID input.
+
+
+2. Konversi ID ke indeks inventory.
+
+
+3. Ambil actual_weapon_id dari array inventory.
+
+
+4. Set equipped_weapon dan base_damage berdasarkan senjata yang dipilih.
+
+
+5. Kirim pesan sukses: "Equipped Terra Blade!"
+
+## Error Handling
+
 Peringatan untuk input tidak valid di menu.
 Contoh:
 
@@ -680,28 +1550,25 @@ Tidak ada mutex untuk shared data (misal: gold pemain).
 
 Solusi: Gunakan mutex/lock saat mengakses data pemain.
 
-Cara Menjalankan Program
+## Cara Menjalankan Program
 Kompilasi:
 
 bash
-gcc dungeon.c shop.c -o dungeon -lpthread
+gcc dungeon.c shop.c -o dungeon
 gcc player.c -o player
 Jalankan Server:
+![Screenshot 2025-05-02 133612](https://github.com/user-attachments/assets/30718094-2fe8-4bce-b655-95cd92cbbdca)
 
 bash
 ./dungeon
 Jalankan Client (di terminal lain):
+![Screenshot 2025-05-02 133709](https://github.com/user-attachments/assets/730062b9-f641-4dc5-b3ad-0af4dd6e969e)
+
 
 bash
 ./player
-Contoh Interaksi:
-
-Pilih opsi 2 (Shop) → Beli senjata.
-
-Pilih opsi 3 (Inventory) → Equip senjata.
-
-Pilih opsi 4 (Battle) → Serang musuh dengan perintah attack.
-
+jalankan:
+![Screenshot 2025-05-03 153126](https://github.com/user-attachments/assets/810bce96-57ca-4331-b091-981cb7b031ea)
 
 # Soal 4
 
