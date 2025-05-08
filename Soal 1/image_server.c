@@ -129,11 +129,11 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // Set socket options for address reuse
+   
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-    // Bind to the specified port
+  
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
@@ -145,7 +145,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // Start listening for incoming connections
+    
     if (listen(server_fd, 10) < 0) {
         perror("Listening failed");
         close(server_fd);
