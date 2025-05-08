@@ -208,7 +208,7 @@ int convert_hex_to_bin(const char *hex_str, unsigned char **bin_data) {
 # Skrip image_client.c
 
 ## Library
-```
+```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -217,7 +217,7 @@ int convert_hex_to_bin(const char *hex_str, unsigned char **bin_data) {
 #include <netinet/in.h>
 #include <arpa/inet.h>
 ```
-```
+```c
 ## Konstanta
 #define SERVER_IP "127.0.0.1"
 #define PORT 9090
@@ -238,7 +238,7 @@ void reverse(char *str) {
 ```
 
 ## Menu
-```
+```c
 void show_menu() {
     printf("															                                                                                        		░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
     printf("                                                                                                                                                            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\n");
@@ -316,7 +316,7 @@ void show_menu() {
 ```
 
 ## Koneksi ke server
-```
+```c
 int connect_to_server() {
     int sock;
     struct sockaddr_in serv_addr;
@@ -341,7 +341,7 @@ int connect_to_server() {
 ```
 
 ## Kirim file untuk didekripsi
-```
+```c
 void kirim_file() {
     char namafile[100];
     printf("Masukkan nama file di folder secrets (contoh: input_1.txt): ");
@@ -383,7 +383,7 @@ void kirim_file() {
 }
 ```
 ## Download file JPEG
-```
+```c
 void download_file() {
     char filename[100];
     printf("Masukkan nama file JPEG (contoh: 1744401234.jpeg): ");
@@ -419,7 +419,7 @@ void download_file() {
 
 
 ## Main Fucnttion
-```
+```c
 int main() {
     int pilih;
     while (1) {
