@@ -1,11 +1,9 @@
 # Soal Nomor 1
-## Dikerjakan oleh 5027241024
+Dikerjakan oleh 5027241024
 
 ## Skrip image_server.c
-
-## Skrip Server C
 ## 1. Library yang Diperlukan
-
+```c
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <signal.h>
@@ -18,7 +16,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <errno.h>
-
+```c
 ## 3. Konstanta dan Prototipe Fungsi
 ```
 #define LISTEN_PORT 9090
